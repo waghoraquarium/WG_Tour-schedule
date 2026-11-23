@@ -1,0 +1,4037 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบจัดการตารางนำชม — พิพิธภัณฑ์สัตว์น้ำหว้ากอ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      /* Waghor Ocean Palette (60-30-10, WCAG AA) */
+      --canvas: #F6F8FB;
+      --surface: rgba(255, 255, 255, 0.84);
+      --surface-solid: #FFFFFF;
+      --surface-2: #EEF2F7;
+      --border: rgba(15, 23, 42, 0.09);
+      --border-strong: rgba(15, 23, 42, 0.16);
+      --ink: #071527;
+      --ink-secondary: #334155;
+      --ink-muted: #64748B;
+      --blue-600: #1D4ED8;
+      --blue-700: #1E40AF;
+      --sky-500: #0EA5E9;
+      --sky-soft: rgba(14, 165, 233, 0.12);
+      --orange-500: #F97316;
+      --orange-600: #EA580C;
+      --orange-soft: rgba(249, 115, 22, 0.12);
+      --emerald-600: #059669;
+      --emerald-soft: rgba(5, 150, 105, 0.12);
+      --rose-600: #E11D48;
+      --rose-soft: rgba(225, 29, 72, 0.10);
+      --glass-shadow: 0 8px 30px rgba(7, 21, 39, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+      --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+      --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    }
+
+    html[data-theme="dark"] {
+      --canvas: #071527;
+      --surface: rgba(11, 31, 58, 0.78);
+      --surface-solid: #0B1F3A;
+      --surface-2: #122B4D;
+      --border: rgba(148, 163, 184, 0.16);
+      --border-strong: rgba(148, 163, 184, 0.28);
+      --ink: #F8FAFC;
+      --ink-secondary: #CBD5E1;
+      --ink-muted: #94A3B8;
+      --blue-600: #38BDF8;
+      --blue-700: #0EA5E9;
+      --sky-soft: rgba(56, 189, 248, 0.15);
+      --orange-soft: rgba(249, 115, 22, 0.18);
+      --emerald-soft: rgba(16, 185, 129, 0.18);
+      --rose-soft: rgba(244, 63, 94, 0.18);
+      --glass-shadow: 0 12px 32px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'IBM Plex Sans Thai', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: var(--canvas);
+      color: var(--ink);
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background-color 240ms var(--ease-out), color 240ms var(--ease-out);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .font-mono-num {
+      font-family: 'JetBrains Mono', 'IBM Plex Sans Thai', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Ambient ocean backdrop (subtle, zero purple) */
+    .ocean-backdrop {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(60% 45% at 12% 0%, rgba(14, 165, 233, 0.12), transparent 70%),
+        radial-gradient(50% 40% at 92% 6%, rgba(29, 78, 216, 0.09), transparent 70%);
+    }
+
+    html[data-theme="dark"] .ocean-backdrop {
+      background:
+        radial-gradient(60% 45% at 12% 0%, rgba(14, 165, 233, 0.18), transparent 70%),
+        radial-gradient(50% 45% at 88% 8%, rgba(2, 132, 199, 0.14), transparent 70%);
+    }
+
+    /* Apple Liquid Glass surface */
+    .glass-card {
+      background: var(--surface);
+      backdrop-filter: blur(18px) saturate(140%);
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
+      border: 1px solid var(--border);
+      box-shadow: var(--glass-shadow);
+      transition: transform 200ms var(--ease-out), border-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
+    }
+
+    .glass-nav {
+      background: var(--surface);
+      backdrop-filter: blur(22px) saturate(160%);
+      -webkit-backdrop-filter: blur(22px) saturate(160%);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Tactile press feedback (rossark-motion-skill) */
+    .btn-press {
+      transition: transform 130ms var(--ease-out), background-color 180ms var(--ease-out), border-color 180ms var(--ease-out), opacity 180ms var(--ease-out);
+      min-height: 44px;
+    }
+    .btn-press:active {
+      transform: scale(0.97);
+    }
+
+    .btn-compact {
+      transition: transform 130ms var(--ease-out), background-color 180ms var(--ease-out), color 180ms var(--ease-out);
+      min-height: 36px;
+    }
+    .btn-compact:active {
+      transform: scale(0.97);
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-strong);
+    }
+
+    .input-surface {
+      background: var(--surface-solid);
+      border: 1px solid var(--border-strong);
+      color: var(--ink);
+      min-height: 44px;
+      transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+    }
+    .input-surface:focus {
+      outline: none;
+      border-color: var(--sky-500);
+      box-shadow: 0 0 0 3px var(--sky-soft);
+    }
+
+    /* Segmented tabs */
+    .tab-btn {
+      color: var(--ink-secondary);
+      min-height: 44px;
+      transition: color 180ms var(--ease-out), background-color 180ms var(--ease-out);
+    }
+    .tab-btn.active {
+      background: var(--surface-solid);
+      color: var(--blue-600);
+      box-shadow: 0 2px 8px rgba(7, 21, 39, 0.08);
+    }
+    html[data-theme="dark"] .tab-btn.active {
+      background: #16335A;
+      color: #38BDF8;
+    }
+
+    /* Subtle wave ambient header animation */
+    @keyframes gentleWave {
+      0%, 100% { transform: translateX(0px); }
+      50% { transform: translateX(-18px); }
+    }
+    .wave-drift {
+      animation: gentleWave 9s ease-in-out infinite;
+    }
+
+    /* Modal entrance (scale 0.96 -> 1, never from 0) */
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .modal-panel {
+      animation: modalIn 210ms var(--ease-out) forwards;
+    }
+
+    /* Toast animation */
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .toast-item {
+      animation: toastIn 200ms var(--ease-out) forwards;
+    }
+
+    /* Table styling */
+    .schedule-row {
+      border-bottom: 1px solid var(--border);
+      transition: background-color 140ms var(--ease-out);
+    }
+    .schedule-row:hover {
+      background-color: var(--sky-soft);
+    }
+
+    /* Calendar day cell */
+    .cal-cell {
+      min-height: 88px;
+      border: 1px solid var(--border);
+      background: var(--surface-solid);
+      transition: border-color 160ms var(--ease-out), transform 160ms var(--ease-out), background-color 160ms var(--ease-out);
+    }
+    .cal-cell:hover {
+      border-color: var(--sky-500);
+      transform: translateY(-1px);
+    }
+    .cal-cell.selected {
+      border-color: var(--blue-600);
+      box-shadow: 0 0 0 2px var(--sky-soft);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .wave-drift {
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ocean-backdrop" aria-hidden="true"></div>
+
+  <div class="relative z-10 min-h-screen flex flex-col">
+    <!-- Top Header -->
+    <header class="glass-nav sticky top-0 z-30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+        <!-- Brand Identity -->
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden" style="background: linear-gradient(135deg, #0B1F3A 0%, #1D4ED8 65%, #0EA5E9 100%); box-shadow: 0 4px 12px rgba(29,78,216,0.28);">
+            <svg viewBox="0 0 36 36" class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 18c4-5 10-7 16-4 3 1.5 5 3.5 7 4-2 .5-4 2.5-7 4-6 3-12 1-16-4z"/>
+              <path d="M27 18l5-4v8l-5-4z"/>
+              <circle cx="11" cy="17" r="1.2" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight truncate leading-tight">ตารางนำชม พิพิธภัณฑ์สัตว์น้ำหว้ากอ</h1>
+            <div class="flex items-center gap-2 text-xs" style="color: var(--ink-muted);">
+              <span id="syncStatusDot" class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span id="syncStatusText" class="truncate">ข้อมูลชีต ตารางนำชม_หว้ากอ (พร้อมใช้งาน)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Controls -->
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="lockModeBtn" type="button" class="btn-press px-3 rounded-xl border text-xs sm:text-sm font-medium flex items-center gap-1.5" style="background: var(--surface-solid); border-color: var(--border-strong); color: var(--ink-secondary);" aria-label="สลับโหมดล็อกการแก้ไข">
+            <i data-lucide="unlock" class="w-4 h-4"></i>
+            <span class="hidden md:inline" id="lockModeLabel">โหมดแก้ไข</span>
+          </button>
+
+          <button id="themeToggleBtn" type="button" class="btn-press w-11 rounded-xl border flex items-center justify-center" style="background: var(--surface-solid); border-color: var(--border-strong); color: var(--ink-secondary);" aria-label="สลับโหมดสว่างหรือโหมดมืดอุโมงค์ปลา">
+            <i data-lucide="moon" id="themeIcon" class="w-4 h-4"></i>
+          </button>
+
+
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-5 sm:py-6 flex-1 space-y-5">
+      <!-- Month Switcher + Primary Navigation Bar -->
+      <section class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <!-- Segmented View Tabs -->
+        <nav class="p-1 rounded-2xl inline-flex items-center gap-1 overflow-x-auto max-w-full" style="background: var(--surface-2); border: 1px solid var(--border);" aria-label="เมนูหลัก">
+          <button type="button" data-tab="schedule" class="tab-btn active px-3.5 sm:px-4 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap">
+            <i data-lucide="table-2" class="w-4 h-4"></i>
+            <span>ตารางนำชม</span>
+          </button>
+          <button type="button" data-tab="calendar" class="tab-btn px-3.5 sm:px-4 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap">
+            <i data-lucide="calendar-days" class="w-4 h-4"></i>
+            <span>ปฏิทิน</span>
+          </button>
+          <button type="button" data-tab="analytics" class="tab-btn px-3.5 sm:px-4 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap">
+            <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+            <span>สถิติสรุปยอด</span>
+          </button>
+          <button type="button" data-tab="sync" class="tab-btn px-3.5 sm:px-4 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap">
+            <i data-lucide="cloud-cog" class="w-4 h-4"></i>
+            <span>เชื่อมชีต &amp; Apps Script</span>
+          </button>
+        </nav>
+
+        <!-- Sheet Tab Selector + Quick Export -->
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-2 glass-card px-3 rounded-xl" style="min-height: 44px;">
+            <i data-lucide="sheet" class="w-4 h-4 shrink-0" style="color: var(--emerald-600);"></i>
+            <label for="sheetSelector" class="text-xs font-medium whitespace-nowrap" style="color: var(--ink-muted);">แท็บชีต:</label>
+            <select id="sheetSelector" class="bg-transparent text-sm font-semibold focus:outline-none pr-1 cursor-pointer" style="color: var(--ink);"></select>
+          </div>
+
+          <button id="exportCsvBtn" type="button" class="btn-press px-3.5 rounded-xl border text-xs sm:text-sm font-medium flex items-center gap-1.5" style="background: var(--surface-solid); border-color: var(--border-strong); color: var(--ink-secondary);">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>ส่งออก CSV</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- KPI Strip (Live Computed) -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" aria-label="สรุปภาพรวม">
+        <div class="glass-card kpi-card rounded-2xl p-4 relative overflow-hidden">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold" style="color: var(--ink-muted);">คณะเข้าชมทั้งหมด</span>
+            <span class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--sky-soft); color: var(--blue-600);">
+              <i data-lucide="building-2" class="w-4 h-4"></i>
+            </span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="kpiGroups" class="text-2xl sm:text-3xl font-bold font-mono-num">0</span>
+            <span class="text-xs" style="color: var(--ink-muted);">คณะ</span>
+          </div>
+          <p id="kpiProvincesSub" class="text-xs mt-1 truncate" style="color: var(--ink-muted);">ครอบคลุม 0 จังหวัด</p>
+        </div>
+
+        <div class="glass-card kpi-card rounded-2xl p-4 relative overflow-hidden">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold" style="color: var(--ink-muted);">ยอดผู้เข้าชมรวม</span>
+            <span class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--emerald-soft); color: var(--emerald-600);">
+              <i data-lucide="users" class="w-4 h-4"></i>
+            </span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="kpiVisitors" class="text-2xl sm:text-3xl font-bold font-mono-num">0</span>
+            <span class="text-xs" style="color: var(--ink-muted);">คน</span>
+          </div>
+          <p id="kpiCategorySub" class="text-xs mt-1 truncate" style="color: var(--ink-muted);">ในระบบ 0 · นอกระบบ 0 · ทั่วไป 0</p>
+        </div>
+
+        <div class="glass-card kpi-card rounded-2xl p-4 relative overflow-hidden">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold" style="color: var(--ink-muted);">ขอความอนุเคราะห์วิทยากร</span>
+            <span class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--orange-soft); color: var(--orange-600);">
+              <i data-lucide="mic" class="w-4 h-4"></i>
+            </span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="kpiSpeakerReq" class="text-2xl sm:text-3xl font-bold font-mono-num">0</span>
+            <span class="text-xs" style="color: var(--ink-muted);">คณะ</span>
+          </div>
+          <p id="kpiSpeakerPct" class="text-xs mt-1 truncate" style="color: var(--ink-muted);">คิดเป็น 0% ของทั้งหมด</p>
+        </div>
+
+        <div class="glass-card kpi-card rounded-2xl p-4 relative overflow-hidden">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold" style="color: var(--ink-muted);">รอมอบหมายผู้รับผิดชอบ</span>
+            <span class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--rose-soft); color: var(--rose-600);">
+              <i data-lucide="user-check" class="w-4 h-4"></i>
+            </span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="kpiUnassigned" class="text-2xl sm:text-3xl font-bold font-mono-num">0</span>
+            <span class="text-xs" style="color: var(--ink-muted);">รายการ</span>
+          </div>
+          <p id="kpiStaffSummary" class="text-xs mt-1 truncate" style="color: var(--ink-muted);">มอบหมายแล้ว 0 คณะ</p>
+        </div>
+      </section>
+
+      <!-- VIEW 1: SCHEDULE & MANAGEMENT -->
+      <section id="view-schedule" class="space-y-4">
+        <!-- Month Selection & Fetch Bar (ตารางนำชมเฉพาะเดือน) -->
+        <div class="glass-card rounded-2xl p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2.5">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background: var(--sky-soft); color: var(--blue-600);">
+                <i data-lucide="calendar-range" class="w-4 h-4"></i>
+              </span>
+              <label for="scheduleMonthSelect" class="text-xs sm:text-sm font-bold whitespace-nowrap">เลือกเดือนที่ต้องการดู:</label>
+            </div>
+            <select id="scheduleMonthSelect" class="input-surface rounded-xl px-3 text-sm font-semibold cursor-pointer min-w-[210px]" aria-label="เลือกเดือนในตารางนำชม"></select>
+            <span id="monthRowBadge" class="px-2.5 py-1 rounded-full text-xs font-semibold font-mono-num" style="background: var(--emerald-soft); color: var(--emerald-600);">0 คณะ</span>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap">
+            <button id="fetchMonthBtn" type="button" class="btn-press px-3.5 rounded-xl text-xs sm:text-sm font-semibold text-white flex items-center gap-1.5" style="background: var(--emerald-600);">
+              <i data-lucide="cloud-download" class="w-4 h-4"></i>
+              <span>ดึงข้อมูลเฉพาะเดือนนี้</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="glass-card rounded-2xl p-3.5 sm:p-4 flex flex-col lg:flex-row gap-3">
+          <div class="relative flex-1 min-w-0">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style="color: var(--ink-muted);"></i>
+            <input id="searchInput" type="search" placeholder="ค้นหาชื่อโรงเรียน, หน่วยงาน, จังหวัด หรือวิทยากร... (กด /)" class="input-surface w-full rounded-xl pl-10 pr-4 text-sm" />
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 lg:w-auto">
+            <select id="filterSpeaker" class="input-surface rounded-xl px-3 text-xs sm:text-sm font-medium cursor-pointer" aria-label="กรองสถานะวิทยากร">
+              <option value="all">วิทยากร: ทั้งหมด</option>
+              <option value="ขอ">ขอวิทยากร</option>
+              <option value="ไม่ขอ">ไม่ขอวิทยากร</option>
+            </select>
+
+            <select id="filterAssignee" class="input-surface rounded-xl px-3 text-xs sm:text-sm font-medium cursor-pointer" aria-label="กรองผู้รับผิดชอบ">
+              <option value="all">ผู้รับผิดชอบ: ทั้งหมด</option>
+              <option value="นราธิป">นราธิป</option>
+              <option value="ณัฐพล">ณัฐพล</option>
+              <option value="unassigned">ยังไม่มอบหมาย</option>
+            </select>
+
+            <select id="filterCategory" class="input-surface rounded-xl px-3 text-xs sm:text-sm font-medium cursor-pointer" aria-label="กรองกลุ่มผู้เข้าชม">
+              <option value="all">ประเภท: ทั้งหมด</option>
+              <option value="formal">ในระบบ (ครู/นร.)</option>
+              <option value="informal">นอกระบบ (ศกร.)</option>
+              <option value="general">ทั่วไป / หน่วยงาน</option>
+            </select>
+
+            <button id="resetFiltersBtn" type="button" class="btn-press rounded-xl border px-3 text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5" style="background: var(--surface-2); border-color: var(--border); color: var(--ink-secondary);">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              <span>ล้างตัวกรอง</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Results Counter -->
+        <div class="flex items-center justify-between px-1 text-xs sm:text-sm" style="color: var(--ink-muted);">
+          <span id="filteredCountText">แสดง 0 รายการ</span>
+          <span class="hidden sm:inline">คลิกเลือกชื่อผู้รับผิดชอบในแถวเพื่อมอบหมายงานได้ทันที</span>
+        </div>
+
+        <!-- Desktop Table Container -->
+        <div class="glass-card rounded-2xl overflow-hidden hidden md:block">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="text-xs font-semibold border-b" style="background: var(--surface-2); border-color: var(--border); color: var(--ink-secondary);">
+                  <th class="py-3 px-3.5 w-16">วันที่/ลำดับ</th>
+                  <th class="py-3 px-3 w-28">เวลา</th>
+                  <th class="py-3 px-3">หน่วยงาน / สถานศึกษา</th>
+                  <th class="py-3 px-3 w-28">จังหวัด</th>
+                  <th class="py-3 px-2.5 text-right w-24">ในระบบ<br><span class="font-normal opacity-75">ครู / นร.</span></th>
+                  <th class="py-3 px-2.5 text-right w-24">นอกระบบ<br><span class="font-normal opacity-75">ครู / นร.</span></th>
+                  <th class="py-3 px-2.5 text-right w-16">ทั่วไป</th>
+                  <th class="py-3 px-3 text-right w-20">รวม</th>
+                  <th class="py-3 px-3 w-28">วิทยากร</th>
+                  <th class="py-3 px-3 w-36">ผู้รับผิดชอบ</th>
+                  <th class="py-3 px-3 text-right w-28">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="scheduleTableBody" class="text-sm"></tbody>
+            </table>
+          </div>
+          <div id="emptyTableState" class="hidden py-14 px-6 text-center">
+            <div class="w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center" style="background: var(--surface-2); color: var(--ink-muted);">
+              <i data-lucide="search-x" class="w-6 h-6"></i>
+            </div>
+            <p class="font-semibold text-base">ไม่พบคณะเข้าชมตามเงื่อนไขที่เลือก</p>
+            <p class="text-sm mt-1" style="color: var(--ink-muted);">ลองล้างตัวกรอง หรือเลือกเดือนอื่นจากเมนูด้านบน</p>
+          </div>
+        </div>
+
+        <!-- Mobile Card List -->
+        <div id="mobileCardList" class="md:hidden space-y-3"></div>
+      </section>
+
+      <!-- VIEW 2: CALENDAR -->
+      <section id="view-calendar" class="hidden space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <!-- Calendar Grid -->
+          <div class="lg:col-span-2 glass-card rounded-2xl p-4 sm:p-5">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2 id="calendarTitle" class="text-lg font-bold">ปฏิทินคิวเข้าชม</h2>
+                <p class="text-xs mt-0.5" style="color: var(--ink-muted);">แตะวันที่เพื่อดูรายละเอียดคณะและคัดลอกแจ้งเตือน LINE</p>
+              </div>
+              <div class="flex items-center gap-3 text-xs">
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full" style="background: var(--orange-500);"></span>ขอวิทยากร</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full" style="background: var(--sky-500);"></span>ไม่ขอ</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-7 gap-1.5 text-center text-xs font-semibold mb-2" style="color: var(--ink-muted);">
+              <div class="py-1">อา.</div>
+              <div class="py-1">จ.</div>
+              <div class="py-1">อ.</div>
+              <div class="py-1">พ.</div>
+              <div class="py-1">พฤ.</div>
+              <div class="py-1">ศ.</div>
+              <div class="py-1">ส.</div>
+            </div>
+            <div id="calendarGrid" class="grid grid-cols-7 gap-1.5"></div>
+          </div>
+
+          <!-- Selected Day Agenda -->
+          <div class="glass-card rounded-2xl p-4 sm:p-5 flex flex-col">
+            <div class="flex items-center justify-between pb-3 mb-3 border-b" style="border-color: var(--border);">
+              <div>
+                <h3 id="selectedDayTitle" class="font-bold text-base">รายละเอียดวันที่เลือก</h3>
+                <p id="selectedDayMeta" class="text-xs mt-0.5" style="color: var(--ink-muted);">เลือกวันจากปฏิทิน</p>
+              </div>
+
+            </div>
+            <div id="selectedDayList" class="space-y-3 flex-1 overflow-y-auto max-h-[520px]"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: ANALYTICS -->
+      <section id="view-analytics" class="hidden space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <!-- Category Doughnut -->
+          <div class="glass-card rounded-2xl p-4 sm:p-5">
+            <h2 class="text-base font-bold mb-1">สัดส่วนผู้เข้าชมตามประเภท</h2>
+            <p class="text-xs mb-4" style="color: var(--ink-muted);">แยกตามโครงสร้างชีต (ในระบบ / นอกระบบ / ทั่วไป)</p>
+            <div class="relative h-64">
+              <canvas id="categoryChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Top Provinces Bar -->
+          <div class="glass-card rounded-2xl p-4 sm:p-5">
+            <h2 class="text-base font-bold mb-1">จังหวัดที่มีผู้เข้าชมสูงสุด</h2>
+            <p class="text-xs mb-4" style="color: var(--ink-muted);">นับยอดรวมผู้เข้าชมทั้งหมดในแท็บที่เลือก</p>
+            <div class="relative h-64">
+              <canvas id="provinceChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Staff Workload Bar -->
+          <div class="glass-card rounded-2xl p-4 sm:p-5">
+            <h2 class="text-base font-bold mb-1">ภาระงานวิทยากรผู้รับผิดชอบ</h2>
+            <p class="text-xs mb-4" style="color: var(--ink-muted);">จำนวนคณะที่ได้รับมอบหมาย</p>
+            <div class="relative h-64">
+              <canvas id="staffChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary Breakdown Table (Matches Sheet I48:I52) -->
+        <div class="glass-card rounded-2xl p-4 sm:p-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <div>
+              <h2 class="text-base font-bold">ตารางสรุปยอดผู้เข้าชมอัตโนมัติ (เทียบเท่าช่องสรุปท้ายชีต)</h2>
+              <p class="text-xs mt-0.5" style="color: var(--ink-muted);">คำนวณสดทันทีเมื่อเพิ่ม แก้ไข หรือลบข้อมูล ไม่ต้องก๊อปปี้สรุปฝั่งขวาเอง</p>
+            </div>
+            <button id="copySummaryLineBtn" type="button" class="btn-press px-3.5 rounded-xl text-xs sm:text-sm font-semibold text-white flex items-center gap-1.5 self-start" style="background: var(--emerald-600);">
+              <i data-lucide="copy" class="w-4 h-4"></i>
+              <span>คัดลอกสรุปส่ง LINE</span>
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left border-collapse">
+              <thead>
+                <tr class="border-b text-xs font-semibold" style="border-color: var(--border); color: var(--ink-muted);">
+                  <th class="py-2.5 px-3">หมวดหมู่ผู้เข้าชม</th>
+                  <th class="py-2.5 px-3 text-right">จำนวน (คน)</th>
+                  <th class="py-2.5 px-3 text-right">สัดส่วน (%)</th>
+                </tr>
+              </thead>
+              <tbody id="summaryBreakdownBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: SYNC & APPS SCRIPT SETUP -->
+      <section id="view-sync" class="hidden space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Connection Panel -->
+          <div class="glass-card rounded-2xl p-5 space-y-4">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: var(--sky-soft); color: var(--blue-600);">
+                <i data-lucide="link" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h2 class="text-base font-bold">เชื่อมต่อ Google Sheet (ตารางนำชม_หว้ากอ)</h2>
+                <p class="text-xs mt-0.5 leading-relaxed" style="color: var(--ink-muted);">
+                  วาง Web App URL จาก Google Apps Script เพื่อดึงและบันทึกข้อมูลลงชีตจริงแบบเรียลไทม์ โดยยังคงทำงานร่วมกับบอทสารบรรณและ WaghorBOT LINE ได้ตามปกติ
+                </p>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label for="gasUrlInput" class="block text-xs font-semibold" style="color: var(--ink-secondary);">Apps Script Web App URL (ต้องขึ้นต้นด้วย https://script.google.com/macros/s/)</label>
+              <input id="gasUrlInput" type="url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="input-surface w-full rounded-xl px-3.5 text-sm font-mono-num" />
+              <p id="gasUrlError" class="hidden text-xs font-medium" style="color: var(--rose-600);"></p>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+              <button id="saveGasUrlBtn" type="button" class="btn-press px-4 rounded-xl text-sm font-semibold text-white flex items-center gap-1.5" style="background: var(--blue-600);">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                <span>บันทึก URL</span>
+              </button>
+              <button id="syncNowBtn" type="button" class="btn-press px-4 rounded-xl border text-sm font-semibold flex items-center gap-1.5" style="background: var(--surface-solid); border-color: var(--border-strong); color: var(--ink);">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                <span>ดึงข้อมูลล่าสุดจากชีต</span>
+              </button>
+            </div>
+
+            <div class="pt-4 border-t space-y-3" style="border-color: var(--border);">
+              <h3 class="text-sm font-bold">สำรองและนำเข้าข้อมูล (JSON)</h3>
+              <div class="flex flex-wrap gap-2">
+                <button id="exportJsonBtn" type="button" class="btn-press px-3.5 rounded-xl border text-xs sm:text-sm font-medium flex items-center gap-1.5" style="background: var(--surface-solid); border-color: var(--border-strong); color: var(--ink-secondary);">
+                  <i data-lucide="file-json" class="w-4 h-4"></i>
+                  <span>ดาวน์โหลดไฟล์สำรอง JSON</span>
+                </button>
+                <label class="btn-press px-3.5 rounded-xl border text-xs sm:text-sm font-medium flex items-center gap-1.5 cursor-pointer" style="background: var(--surface-solid); border-color: var(--border-strong); color: var(--ink-secondary);">
+                  <i data-lucide="upload" class="w-4 h-4"></i>
+                  <span>นำเข้าไฟล์ JSON</span>
+                  <input id="importJsonInput" type="file" accept=".json,application/json" class="hidden" />
+                </label>
+                <button id="resetDemoDataBtn" type="button" class="btn-press px-3.5 rounded-xl border text-xs sm:text-sm font-medium flex items-center gap-1.5" style="background: var(--rose-soft); border-color: transparent; color: var(--rose-600);">
+                  <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                  <span>รีเซ็ตเป็นข้อมูลตั้งต้นจากชีต</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Apps Script Code Viewer -->
+          <div class="glass-card rounded-2xl p-5 flex flex-col">
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <div>
+                <h2 class="text-base font-bold">สคริปต์ฝั่งชีต (Code.gs)</h2>
+                <p class="text-xs mt-0.5" style="color: var(--ink-muted);">คัดลอกไปวางใน Extensions &gt; Apps Script ของไฟล์ ตารางนำชม_หว้ากอ แล้ว Deploy เป็น Web App</p>
+              </div>
+              <button id="copyGasCodeBtn" type="button" class="btn-compact px-3 rounded-lg text-xs font-semibold text-white flex items-center gap-1.5 shrink-0" style="background: var(--blue-600);">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span>คัดลอกโค้ด</span>
+              </button>
+            </div>
+            <pre id="gasCodePreview" class="flex-1 rounded-xl p-3.5 text-xs font-mono-num overflow-auto max-h-80 leading-relaxed" style="background: #071527; color: #E2E8F0;"></pre>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Subtle Footer -->
+    <footer class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 text-xs flex flex-col sm:flex-row items-center justify-between gap-2" style="color: var(--ink-muted);">
+      <span>พิพิธภัณฑ์สัตว์น้ำหว้ากอ · อุทยานวิทยาศาสตร์พระจอมเกล้า ณ หว้ากอ จังหวัดประจวบคีรีขันธ์</span>
+      <span class="font-mono-num">ฐานข้อมูล: ตารางนำชม_หว้ากอ</span>
+    </footer>
+  </div>
+
+  <!-- ADD / EDIT BOOKING MODAL -->
+  <div id="bookingModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(7, 21, 39, 0.56); backdrop-filter: blur(6px);" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-panel w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl border max-h-[92vh] flex flex-col" style="background: var(--surface-solid); border-color: var(--border-strong);">
+      <div class="px-5 py-4 border-b flex items-center justify-between" style="border-color: var(--border);">
+        <h2 id="modalTitle" class="text-base sm:text-lg font-bold">แก้ไขข้อมูลคณะเข้าชม</h2>
+        <button id="closeModalBtn" type="button" class="btn-compact w-9 h-9 rounded-lg flex items-center justify-center" style="background: var(--surface-2); color: var(--ink-secondary);" aria-label="ปิดหน้าต่าง">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="bookingForm" class="p-5 overflow-y-auto space-y-4">
+        <input type="hidden" id="editRecordId" />
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label for="fieldDay" class="block text-xs font-semibold mb-1" style="color: var(--ink-secondary);">วันที่ (1–31)</label>
+            <input id="fieldDay" type="number" min="1" max="31" required class="input-surface w-full rounded-xl px-3 text-sm font-mono-num" placeholder="เช่น 15" />
+          </div>
+          <div>
+            <label for="fieldTime" class="block text-xs font-semibold mb-1" style="color: var(--ink-secondary);">ช่วงเวลา</label>
+            <input id="fieldTime" type="text" class="input-surface w-full rounded-xl px-3 text-sm font-mono-num" placeholder="เช่น 09.00-10.30" />
+          </div>
+          <div>
+            <label for="fieldProvince" class="block text-xs font-semibold mb-1" style="color: var(--ink-secondary);">จังหวัด</label>
+            <input id="fieldProvince" type="text" class="input-surface w-full rounded-xl px-3 text-sm" placeholder="เช่น ประจวบคีรีขันธ์" list="provinceSuggestions" />
+            <datalist id="provinceSuggestions">
+              <option value="ประจวบ"></option>
+              <option value="เพชรบุรี"></option>
+              <option value="ชุมพร"></option>
+              <option value="กรุงเทพฯ"></option>
+              <option value="สุราษฎร์ธานี"></option>
+              <option value="ราชบุรี"></option>
+              <option value="นครปฐม"></option>
+              <option value="ปทุมธานี"></option>
+              <option value="สมุทรปราการ"></option>
+              <option value="ภูเก็ต"></option>
+              <option value="นนทบุรี"></option>
+              <option value="กระบี่"></option>
+              <option value="นครศรีธรรมราช"></option>
+            </datalist>
+          </div>
+        </div>
+
+        <div>
+          <label for="fieldOrg" class="block text-xs font-semibold mb-1" style="color: var(--ink-secondary);">ชื่อหน่วยงาน / โรงเรียน <span style="color: var(--rose-600);">*</span></label>
+          <input id="fieldOrg" type="text" required class="input-surface w-full rounded-xl px-3.5 text-sm" placeholder="เช่น โรงเรียนวัดไตรสามัคคี" />
+        </div>
+
+        <!-- Visitor Counts Grid -->
+        <div class="p-3.5 rounded-xl space-y-3" style="background: var(--surface-2); border: 1px solid var(--border);">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold" style="color: var(--ink-secondary);">จำนวนผู้เข้าชม (แยกประเภทตามชีต)</span>
+            <span class="text-xs font-semibold font-mono-num" style="color: var(--blue-600);">รวม: <span id="formTotalPreview">0</span> คน</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+            <div>
+              <label for="fieldFormalTeacher" class="block text-[11px] font-medium mb-1" style="color: var(--ink-muted);">ในระบบ (ครู)</label>
+              <input id="fieldFormalTeacher" type="number" min="0" max="5000" value="0" class="input-surface w-full rounded-lg px-2.5 text-sm font-mono-num text-right" />
+            </div>
+            <div>
+              <label for="fieldFormalStudent" class="block text-[11px] font-medium mb-1" style="color: var(--ink-muted);">ในระบบ (นร.)</label>
+              <input id="fieldFormalStudent" type="number" min="0" max="5000" value="0" class="input-surface w-full rounded-lg px-2.5 text-sm font-mono-num text-right" />
+            </div>
+            <div>
+              <label for="fieldInformalTeacher" class="block text-[11px] font-medium mb-1" style="color: var(--ink-muted);">นอกระบบ (ครู)</label>
+              <input id="fieldInformalTeacher" type="number" min="0" max="5000" value="0" class="input-surface w-full rounded-lg px-2.5 text-sm font-mono-num text-right" />
+            </div>
+            <div>
+              <label for="fieldInformalStudent" class="block text-[11px] font-medium mb-1" style="color: var(--ink-muted);">นอกระบบ (นร.)</label>
+              <input id="fieldInformalStudent" type="number" min="0" max="5000" value="0" class="input-surface w-full rounded-lg px-2.5 text-sm font-mono-num text-right" />
+            </div>
+            <div class="col-span-2 sm:col-span-1">
+              <label for="fieldGeneral" class="block text-[11px] font-medium mb-1" style="color: var(--ink-muted);">ทั่วไป</label>
+              <input id="fieldGeneral" type="number" min="0" max="5000" value="0" class="input-surface w-full rounded-lg px-2.5 text-sm font-mono-num text-right" />
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="fieldSpeaker" class="block text-xs font-semibold mb-1" style="color: var(--ink-secondary);">สถานะขอวิทยากร</label>
+            <select id="fieldSpeaker" class="input-surface w-full rounded-xl px-3 text-sm font-medium">
+              <option value="ขอ">ขอความอนุเคราะห์วิทยากร</option>
+              <option value="ไม่ขอ">ไม่ขอวิทยากร (เข้าชมอิสระ)</option>
+            </select>
+          </div>
+          <div>
+            <label for="fieldAssignee" class="block text-xs font-semibold mb-1" style="color: var(--ink-secondary);">ผู้รับผิดชอบ / วิทยากร</label>
+            <input id="fieldAssignee" type="text" class="input-surface w-full rounded-xl px-3 text-sm" placeholder="เช่น นราธิป, ณัฐพล" list="staffSuggestions" />
+            <datalist id="staffSuggestions">
+              <option value="นราธิป"></option>
+              <option value="ณัฐพล"></option>
+            </datalist>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t flex items-center justify-end gap-2" style="border-color: var(--border);">
+          <button id="cancelModalBtn" type="button" class="btn-press px-4 rounded-xl border text-sm font-medium" style="background: var(--surface-2); border-color: var(--border); color: var(--ink-secondary);">ยกเลิก</button>
+          <button type="submit" class="btn-press px-5 rounded-xl text-sm font-semibold text-white" style="background: linear-gradient(135deg, #1D4ED8, #0EA5E9);">บันทึกข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- DELETE CONFIRMATION MODAL -->
+  <div id="deleteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(7, 21, 39, 0.56); backdrop-filter: blur(6px);" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+    <div class="modal-panel w-full max-w-md rounded-2xl p-5 shadow-2xl border space-y-4" style="background: var(--surface-solid); border-color: var(--border-strong);">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: var(--rose-soft); color: var(--rose-600);">
+          <i data-lucide="trash-2" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 id="deleteModalTitle" class="text-base font-bold">ยืนยันการลบรายการ</h3>
+          <p id="deleteModalDesc" class="text-sm mt-1" style="color: var(--ink-muted);"></p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button id="cancelDeleteBtn" type="button" class="btn-press px-4 rounded-xl border text-sm font-medium" style="background: var(--surface-2); border-color: var(--border); color: var(--ink-secondary);">ยกเลิก</button>
+        <button id="confirmDeleteBtn" type="button" class="btn-press px-4 rounded-xl text-sm font-semibold text-white" style="background: var(--rose-600);">ลบรายการ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIN LOCK MODAL -->
+  <div id="pinModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(7, 21, 39, 0.56); backdrop-filter: blur(6px);" role="dialog" aria-modal="true" aria-labelledby="pinModalTitle">
+    <div class="modal-panel w-full max-w-sm rounded-2xl p-5 shadow-2xl border space-y-4" style="background: var(--surface-solid); border-color: var(--border-strong);">
+      <div>
+        <h3 id="pinModalTitle" class="text-base font-bold">ปลดล็อกโหมดแก้ไข</h3>
+        <p id="pinModalSubtitle" class="text-xs mt-1" style="color: var(--ink-muted);">กรอกรหัส PIN 4 หลัก (ค่าเริ่มต้น: 1234)</p>
+      </div>
+      <input id="pinInput" type="password" inputmode="numeric" maxlength="8" class="input-surface w-full rounded-xl px-4 text-center text-lg tracking-widest font-mono-num" placeholder="••••" />
+      <p id="pinError" class="hidden text-xs font-medium" style="color: var(--rose-600);">รหัส PIN ไม่ถูกต้อง</p>
+      <div class="flex justify-end gap-2">
+        <button id="cancelPinBtn" type="button" class="btn-press px-4 rounded-xl border text-sm font-medium" style="background: var(--surface-2); border-color: var(--border); color: var(--ink-secondary);">ยกเลิก</button>
+        <button id="submitPinBtn" type="button" class="btn-press px-4 rounded-xl text-sm font-semibold text-white" style="background: var(--blue-600);">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ============================================================
+      // 1. GROUNDED REAL DATA FROM ตารางนำชม_หว้ากอ
+      // ============================================================
+      const SHEET_TABS = [
+        '2/69', 'มิย.69', 'ก.ค.69', 'ส .ค.69', 'ก.ย.69',
+        'ต.ค.69', 'พ.ย.69', 'ธ.ค.69', 'ม.ค.70', 'ก.พ.70', 'มี.ค.70'
+      ];
+
+      const SHEET_LABELS = {
+        '2/69': 'กุมภาพันธ์ 2569 (2/69)',
+        'มิย.69': 'มิถุนายน 2569 (มิย.69)',
+        'ก.ค.69': 'กรกฎาคม 2569 (ก.ค.69)',
+        'ส .ค.69': 'สิงหาคม 2569 (ส .ค.69)',
+        'ก.ย.69': 'กันยายน 2569 (ก.ย.69)',
+        'ต.ค.69': 'ตุลาคม 2569 (ต.ค.69)',
+        'พ.ย.69': 'พฤศจิกายน 2569 (พ.ย.69)',
+        'ธ.ค.69': 'ธันวาคม 2569 (ธ.ค.69)',
+        'ม.ค.70': 'มกราคม 2570 (ม.ค.70)',
+        'ก.พ.70': 'กุมภาพันธ์ 2570 (ก.พ.70)',
+        'มี.ค.70': 'มีนาคม 2570 (มี.ค.70)'
+      };
+
+      const INITIAL_DATA = {
+        "2/69": [
+          {
+            "id": "269-11",
+            "day": 1,
+            "time": "",
+            "org": "บ้านพักเด็กและครอบครัว จ.ประจวบ",
+            "province": "ประจวบ",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 31,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-12",
+            "day": 2,
+            "time": "",
+            "org": "อบต.ป่าร่อน",
+            "province": "สุราษฏร์ธานี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 50,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-13",
+            "day": 3,
+            "time": "",
+            "org": "คณะกรรมการบริหารงานพระมหาธาตุนภเมทนีดล นภพลภูมิสิริ",
+            "province": "กรุงเทพฯ",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 80,
+            "speaker": "ขอ",
+            "assignee": "ณัฐพล"
+          },
+          {
+            "id": "269-14",
+            "day": 4,
+            "time": "",
+            "org": "โรงเรียนวัดไตรสามัคคี",
+            "province": "สมุทรปราการ",
+            "ft": 49,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-15",
+            "day": 5,
+            "time": "",
+            "org": "ศกร.เพชรบุรี",
+            "province": "เพชรบุรี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 80,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-16",
+            "day": 6,
+            "time": "",
+            "org": "ร.ร.อ่างทองพัฒนา",
+            "province": "ประจวบ",
+            "ft": 9,
+            "fs": 31,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "ณัฐพล"
+          },
+          {
+            "id": "269-17",
+            "day": 7,
+            "time": "",
+            "org": "ร.ร.คลองวาฬ",
+            "province": "ประจวบ",
+            "ft": 0,
+            "fs": 10,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "269-18",
+            "day": 8,
+            "time": "",
+            "org": "ศกร.เขาย้อย",
+            "province": "เพชรบุรี",
+            "ft": 0,
+            "fs": 0,
+            "it": 3,
+            "is": 40,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-19",
+            "day": 9,
+            "time": "",
+            "org": "อบต.โพทะเล",
+            "province": "",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 52,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-20",
+            "day": 10,
+            "time": "",
+            "org": "อบต.โพทะเล",
+            "province": "",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 52,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-21",
+            "day": 11,
+            "time": "",
+            "org": "ศกร.เพชรบุรี",
+            "province": "เพชรบุุรี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 80,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-22",
+            "day": 12,
+            "time": "",
+            "org": "ร.ร.เบญจมเทพอุทิศ",
+            "province": "เพชรบุรี",
+            "ft": 22,
+            "fs": 461,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-23",
+            "day": 13,
+            "time": "",
+            "org": "ร.ร.เทศบาล 2 บ้านกระทู้",
+            "province": "ภูเก็ต",
+            "ft": 6,
+            "fs": 29,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-24",
+            "day": 14,
+            "time": "",
+            "org": "ร.ร.วัดนาทุ่ง",
+            "province": "ชุมพร",
+            "ft": 11,
+            "fs": 74,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-25",
+            "day": 15,
+            "time": "",
+            "org": "ร.ร.ด่านสวีวิทยา",
+            "province": "ชุุมพร",
+            "ft": 13,
+            "fs": 148,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-26",
+            "day": 16,
+            "time": "",
+            "org": "ร.ร.บ้านบน",
+            "province": "ประจวบ",
+            "ft": 3,
+            "fs": 23,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-27",
+            "day": 17,
+            "time": "",
+            "org": "ศกร.สวนผึ้ง",
+            "province": "ราชบุรี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 120,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-28",
+            "day": 18,
+            "time": "",
+            "org": "ร.ร.สอาดเผดิมวิทยา",
+            "province": "ชุมพร",
+            "ft": 4,
+            "fs": 72,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-29",
+            "day": 19,
+            "time": "",
+            "org": "ร.ร.บ้านน้ำลอดน้อย",
+            "province": "ชุมพร",
+            "ft": 15,
+            "fs": 161,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-30",
+            "day": 20,
+            "time": "",
+            "org": "ร.ร.สวนกุหลาบวิทยาลัย ธนบุรี",
+            "province": "กรุงเทพฯ",
+            "ft": 10,
+            "fs": 125,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-31",
+            "day": 21,
+            "time": "",
+            "org": "ร.ร.บ้านดอนมะขาม",
+            "province": "ประจวบ",
+            "ft": 11,
+            "fs": 110,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-32",
+            "day": 22,
+            "time": "",
+            "org": "ร.ร.บ้านมะเดื่อทอง",
+            "province": "ประจวบ",
+            "ft": 8,
+            "fs": 102,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-33",
+            "day": 23,
+            "time": "",
+            "org": "ม.มหาจุฬาลงกรณราชวิทยาลัย",
+            "province": "นครปฐม",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 44,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-34",
+            "day": 24,
+            "time": "",
+            "org": "โรงเรียนบ้านหนองเตียน",
+            "province": "เพชรบุรี",
+            "ft": 12,
+            "fs": 52,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-35",
+            "day": 25,
+            "time": "",
+            "org": "ร.ร.เทศบาลบ้านเขาน้อย",
+            "province": "ประจวบฯ",
+            "ft": 10,
+            "fs": 67,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-36",
+            "day": 26,
+            "time": "",
+            "org": "บ.สุขนิยมทัวร์",
+            "province": "นนทบุรี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 24,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-37",
+            "day": 27,
+            "time": "",
+            "org": "ร.ร.บ้านตาขุน",
+            "province": "สุราษฎร์ธานี",
+            "ft": 3,
+            "fs": 30,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-38",
+            "day": 28,
+            "time": "",
+            "org": "ร.ร.หากสนุกราษำร์บำรุง",
+            "province": "ประจวบ",
+            "ft": 10,
+            "fs": 131,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-39",
+            "day": 29,
+            "time": "",
+            "org": "ศกร.ปทุมธานี",
+            "province": "ปทุุมธานี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-40",
+            "day": 30,
+            "time": "",
+            "org": "ศกร.ลาดหลุมแก้ว",
+            "province": "ปทุมธานี",
+            "ft": 0,
+            "fs": 0,
+            "it": 13,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-41",
+            "day": 31,
+            "time": "",
+            "org": "ร.ร.หากสนุกราษำร์บำรุง",
+            "province": "ประจวบ",
+            "ft": 10,
+            "fs": 131,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-42",
+            "day": 32,
+            "time": "",
+            "org": "ร.ร.บ้านทรายแก้ว",
+            "province": "ชุมพร",
+            "ft": 10,
+            "fs": 70,
+            "it": 0,
+            "is": 0,
+            "gen": 23,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-43",
+            "day": 33,
+            "time": "",
+            "org": "ร.ร.ประชารังสรรค์",
+            "province": "ประจวบ",
+            "ft": 9,
+            "fs": 56,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-44",
+            "day": 34,
+            "time": "",
+            "org": "ร.ร.บ้านตะเคียนงาม",
+            "province": "เพชรบุรี",
+            "ft": 0,
+            "fs": 62,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "269-45",
+            "day": 35,
+            "time": "",
+            "org": "ร.ร.วัดผสุดีผาราม",
+            "province": "ชุมพร",
+            "ft": 10,
+            "fs": 50,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          }
+        ],
+        "มิย.69": [
+          {
+            "id": "มิย.69-6",
+            "day": 3,
+            "time": "9.30-15.00",
+            "org": "ศกร.เพชรบุรี",
+            "province": "เพชรบุรี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 80,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "มิย.69-9",
+            "day": 6,
+            "time": "9.30-15.00",
+            "org": "ศกร.เพชรบุรี",
+            "province": "เพชรบุรี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 80,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "มิย.69-11",
+            "day": 8,
+            "time": "13.00-15.30",
+            "org": "วิทยาลัยประมงชุมพรฯ",
+            "province": "ชุมพร",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 20,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "มิย.69-16",
+            "day": 12,
+            "time": "14.00",
+            "org": "ร.ร.อ่างทองพัฒนา",
+            "province": "ประจวบ",
+            "ft": 9,
+            "fs": 31,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "ณัฐพล"
+          },
+          {
+            "id": "มิย.69-17",
+            "day": 13,
+            "time": "13.00",
+            "org": "ม.ลาดบัง",
+            "province": "",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "มิย.69-26",
+            "day": 22,
+            "time": "14.00-15.30",
+            "org": "ร.ร.คลองวาฬ",
+            "province": "ประจวบ",
+            "ft": 0,
+            "fs": 10,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "มิย.69-30",
+            "day": 26,
+            "time": "ไม่ระบุ",
+            "org": "ศกร.เขาย้อย",
+            "province": "เพชรบุรี",
+            "ft": 0,
+            "fs": 0,
+            "it": 3,
+            "is": 40,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "มิย.69-31",
+            "day": 27,
+            "time": "11.013.00",
+            "org": "วิทยาลัยการออกแบบ",
+            "province": "กรุงเทพฯ4",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 102,
+            "speaker": "ไม่ขอ",
+            "assignee": "ไม่ขอ"
+          },
+          {
+            "id": "มิย.69-33",
+            "day": 29,
+            "time": "",
+            "org": "ศูนย์พัฒนาเด็กเล็กตำบลห้วยทรายเหนือ",
+            "province": "",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 91,
+            "speaker": "ขอ",
+            "assignee": "ไม่ขอ"
+          }
+        ],
+        "ก.ค.69": [
+          {
+            "id": "ก.ค.69-5",
+            "day": 2,
+            "time": "13.00-14.00",
+            "org": "ร.ร.วัดสมหวัง",
+            "province": "สุราษฎร์ธานี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ค.69-13",
+            "day": 10,
+            "time": "10.00",
+            "org": "ร.ร.อนุบาลบางสะพาน",
+            "province": "ประจวบ",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ค.69-14",
+            "day": 10,
+            "time": "11.30-13.00",
+            "org": "ร.ร.บ้านเกาะพยาม",
+            "province": "ระนอง",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ค.69-18",
+            "day": 13,
+            "time": "10.00",
+            "org": "ศพด.บ้านไร่เก่า",
+            "province": "ประจวบ",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ค.69-28",
+            "day": 23,
+            "time": "13.00",
+            "org": "อบต.โพทะเล",
+            "province": "",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 52,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ค.69-29",
+            "day": 24,
+            "time": "08.00",
+            "org": "ร.ร.บ้านหนองตะเภา",
+            "province": "ประจวบ",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "ไม่ได้รับ"
+          },
+          {
+            "id": "ก.ค.69-30",
+            "day": 24,
+            "time": "11.30",
+            "org": "ร.ร.อนุบาลเทศบาลตำบลคลองวาฬ",
+            "province": "ประจวบ",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "ไม่ได้รับ"
+          },
+          {
+            "id": "ก.ค.69-33",
+            "day": 27,
+            "time": "11.00",
+            "org": "ศกร.คลองท่อม",
+            "province": "กระบี่",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "ไม่ได้รับ"
+          },
+          {
+            "id": "ก.ค.69-37",
+            "day": 31,
+            "time": "09.00",
+            "org": "ศกร.สวี",
+            "province": "ชุมพร",
+            "ft": 0,
+            "fs": 0,
+            "it": 6,
+            "is": 80,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          }
+        ],
+        "ส .ค.69": [
+          {
+            "id": "ส .ค.69-4",
+            "day": 1,
+            "time": "13.00-15.00",
+            "org": "ร.ร.เทศบาลวัดชัยชุมพล",
+            "province": "นครศรีธรรมราช",
+            "ft": 4,
+            "fs": 30,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ส .ค.69-5",
+            "day": 2,
+            "time": "",
+            "org": "ศูนย์ส่งเสริมการเรียนรู้ระดับอำเภอบางแพ",
+            "province": "ราชบุรี",
+            "ft": 0,
+            "fs": 0,
+            "it": 80,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ส .ค.69-6",
+            "day": 3,
+            "time": "9.30-15.00",
+            "org": "ศกร.เพชรบุรี",
+            "province": "เพชรบุุรี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 80,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ส .ค.69-7",
+            "day": 4,
+            "time": "ไม่ระบุ",
+            "org": "ศพด.ตาลเจ็ดยอด",
+            "province": "ประจวบ",
+            "ft": 4,
+            "fs": 32,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ส .ค.69-8",
+            "day": 4,
+            "time": "ไม่ระบุ",
+            "org": "ร.ร.เบญจมเทพอุทิศ",
+            "province": "เพชรบุรี",
+            "ft": 22,
+            "fs": 461,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ส .ค.69-9",
+            "day": 5,
+            "time": "13.30",
+            "org": "ร.ร.เทศบาล 2 บ้านกระทู้",
+            "province": "ภูเก็ต",
+            "ft": 6,
+            "fs": 29,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ส .ค.69-10",
+            "day": 6,
+            "time": "8.30-12.00",
+            "org": "ร.ร.วัดนาทุ่ง",
+            "province": "ชุมพร",
+            "ft": 11,
+            "fs": 74,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ส .ค.69-11",
+            "day": 6,
+            "time": "9.30-15.00",
+            "org": "ศกร.เพชรบุรี",
+            "province": "เพชรบุุรี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 80,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ส .ค.69-12",
+            "day": 7,
+            "time": "8.55.11.55",
+            "org": "ร.ร.ด่านสวีวิทยา",
+            "province": "ชุุมพร",
+            "ft": 13,
+            "fs": 148,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ส .ค.69-13",
+            "day": 7,
+            "time": "09.00",
+            "org": "ร.ร.บ้านบน",
+            "province": "ประจวบ",
+            "ft": 3,
+            "fs": 23,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ส .ค.69-16",
+            "day": 10,
+            "time": "10.00",
+            "org": "ศกร.สวนผึ้ง",
+            "province": "ราชบุรี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 120,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ส .ค.69-17",
+            "day": 11,
+            "time": "13.30",
+            "org": "ร.ร.สวนศรีวิทยา",
+            "province": "ชุมพร",
+            "ft": 9,
+            "fs": 50,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ส .ค.69-21",
+            "day": 14,
+            "time": "13.00",
+            "org": "ร.ร.สอาดเผดิมวิทยา",
+            "province": "ชุมพร",
+            "ft": 4,
+            "fs": 72,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ส .ค.69-22",
+            "day": 14,
+            "time": "13.00",
+            "org": "ร.ร.บ้านไร่ใน",
+            "province": "ประจวบ",
+            "ft": 1,
+            "fs": 12,
+            "it": 0,
+            "is": 0,
+            "gen": 11,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ส .ค.69-28",
+            "day": 20,
+            "time": "13.00-15.00",
+            "org": "ร.ร.บ้านเกาะเต่า",
+            "province": "สุราษฎร์ธานี",
+            "ft": 4,
+            "fs": 37,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ส .ค.69-29",
+            "day": 21,
+            "time": "9.00-12.00",
+            "org": "ร.ร.วัดดอนยาง",
+            "province": "ชุมพร",
+            "ft": 12,
+            "fs": 59,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ส .ค.69-30",
+            "day": 21,
+            "time": "12.00-14.00",
+            "org": "ร.ร.แหลมราษฎร์บำรุง",
+            "province": "นครศรีธรรมราช",
+            "ft": 4,
+            "fs": 42,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ส .ค.69-31",
+            "day": 21,
+            "time": "09.00",
+            "org": "ร.ร.วัดบางแหวน",
+            "province": "ชุุมพร",
+            "ft": 19,
+            "fs": 122,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ส .ค.69-34",
+            "day": 24,
+            "time": "8.30-14.30",
+            "org": "อบต.ทองมงคล",
+            "province": "ประจวบ",
+            "ft": 7,
+            "fs": 33,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ส .ค.69-35",
+            "day": 24,
+            "time": "9.00-12.00",
+            "org": "ร.ร.บ้านน้ำลอดน้อย",
+            "province": "ชุมพร",
+            "ft": 15,
+            "fs": 161,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ส .ค.69-36",
+            "day": 24,
+            "time": "13.00-15.00",
+            "org": "ร.ร.ชุมชนหาดพันไกร",
+            "province": "ชุุมพร",
+            "ft": 16,
+            "fs": 48,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ส .ค.69-37",
+            "day": 25,
+            "time": "13.00-14.30",
+            "org": "ร.ร.สวนกุหลาบวิทยาลัย ธนบุรี",
+            "province": "กรุงเทพฯ",
+            "ft": 10,
+            "fs": 125,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ส .ค.69-38",
+            "day": 26,
+            "time": "13.00",
+            "org": "ร.ร.บ้านดอนมะขาม",
+            "province": "ประจวบ",
+            "ft": 11,
+            "fs": 110,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ส .ค.69-39",
+            "day": 26,
+            "time": "13.00-15.30",
+            "org": "ร.ร.บ้านมะเดื่อทอง",
+            "province": "ประจวบ",
+            "ft": 8,
+            "fs": 102,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ส .ค.69-40",
+            "day": 27,
+            "time": "9.00-15.00",
+            "org": "ม.มหาจุฬาลงกรณราชวิทยาลัย",
+            "province": "นครปฐม",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 44,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ส .ค.69-41",
+            "day": 27,
+            "time": "13.00",
+            "org": "โรงเรียนบ้านหนองเตียน",
+            "province": "เพชรบุรี",
+            "ft": 12,
+            "fs": 52,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ส .ค.69-42",
+            "day": 28,
+            "time": "10.00",
+            "org": "สนง.เทศบาล ต.ฉลอง",
+            "province": "ภูเก็ต",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 28,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          }
+        ],
+        "ก.ย.69": [
+          {
+            "id": "ก.ย.69-5",
+            "day": 2,
+            "time": "09.00",
+            "org": "ร.ร.เทศบาลบ้านเขาน้อย",
+            "province": "ประจวบฯ",
+            "ft": 10,
+            "fs": 67,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ย.69-6",
+            "day": 3,
+            "time": "15.00-16.00",
+            "org": "บ.สุขนิยมทัวร์",
+            "province": "นนทบุรี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 24,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ย.69-9",
+            "day": 6,
+            "time": "12.00-14.00",
+            "org": "ร.ร.บ้านตาขุน",
+            "province": "สุราษฎร์ธานี",
+            "ft": 3,
+            "fs": 30,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ย.69-10",
+            "day": 7,
+            "time": "ไม่ระบุ",
+            "org": "อบต.อ่างทอก",
+            "province": "1.0",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 87,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ย.69-11",
+            "day": 8,
+            "time": "09.00",
+            "org": "ร.ร.หาดสนุกราษร์บำรุง",
+            "province": "ประจวบ",
+            "ft": 10,
+            "fs": 131,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-12",
+            "day": 8,
+            "time": "9.00-12.00",
+            "org": "ศกร.ปทุมธานี",
+            "province": "ปทุุมธานี",
+            "ft": 0,
+            "fs": 0,
+            "it": 30,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-13",
+            "day": 8,
+            "time": "13.00",
+            "org": "ศกร.ลาดหลุมแก้ว",
+            "province": "ปทุมธานี",
+            "ft": 0,
+            "fs": 0,
+            "it": 13,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-14",
+            "day": 9,
+            "time": "09.00",
+            "org": "ร.ร.หาดสนุกราษร์บำรุง",
+            "province": "ประจวบ",
+            "ft": 10,
+            "fs": 131,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-15",
+            "day": 9,
+            "time": "11.00",
+            "org": "ร.ร.บ้านห้วนทรายขาว",
+            "province": "ชุมพร",
+            "ft": 5,
+            "fs": 50,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ย.69-16",
+            "day": 9,
+            "time": "11.30-14.30",
+            "org": "ร.ร.อุทยานศึกษากระบี่",
+            "province": "กระบี่",
+            "ft": 6,
+            "fs": 75,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ย.69-17",
+            "day": 10,
+            "time": "10.00",
+            "org": "ร.ร.วัดเขาราษฎร์บำรุง",
+            "province": "ประจวบ",
+            "ft": 6,
+            "fs": 31,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-18",
+            "day": 10,
+            "time": "10.00-12.00",
+            "org": "ร.ร.จุฬาภรณ์ราชวิทยาลัย",
+            "province": "นครศรีธรรมราช",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ย.69-19",
+            "day": 10,
+            "time": "11.00-13.00",
+            "org": "ร.ร.บ้านทรายแก้ว",
+            "province": "ชุมพร",
+            "ft": 10,
+            "fs": 70,
+            "it": 0,
+            "is": 0,
+            "gen": 23,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-20",
+            "day": 11,
+            "time": "9.00-11.0",
+            "org": "ร.ร.บ้านเขาล้าน",
+            "province": "ชุุมพร",
+            "ft": 20,
+            "fs": 170,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ย.69-21",
+            "day": 11,
+            "time": "9.00-12.00",
+            "org": "ร.ร.บ้านทุ่งเคล็ด",
+            "province": "เพชรบุรี",
+            "ft": 9,
+            "fs": 28,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-22",
+            "day": 11,
+            "time": "9.00-14.00",
+            "org": "โรงเรียนบ้านบึงลัด",
+            "province": "ชุมพร",
+            "ft": 12,
+            "fs": 35,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ย.69-25",
+            "day": 14,
+            "time": "13.30-16.00",
+            "org": "ศกร.ยะลา",
+            "province": "ยะลา",
+            "ft": 0,
+            "fs": 0,
+            "it": 6,
+            "is": 30,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ย.69-26",
+            "day": 14,
+            "time": "13.30-16.01",
+            "org": "ร.ร.ประชารังสรรค์",
+            "province": "ประจวบ",
+            "ft": 9,
+            "fs": 56,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "ลัคนา"
+          },
+          {
+            "id": "ก.ย.69-27",
+            "day": 15,
+            "time": "08.30",
+            "org": "ร.ร.บ้านตะเคียนงาม",
+            "province": "เพชรบุรี",
+            "ft": 0,
+            "fs": 62,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-28",
+            "day": 16,
+            "time": "9.00-15.00",
+            "org": "อบต.ช้างแรก",
+            "province": "ประจวบ",
+            "ft": 18,
+            "fs": 45,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ย.69-29",
+            "day": 16,
+            "time": "10.00",
+            "org": "มศว.",
+            "province": "กรุงเทพฯ",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 8,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-30",
+            "day": 16,
+            "time": "13.00",
+            "org": "ร.ร.บ้านหนองมงคล",
+            "province": "ประจวบ",
+            "ft": 9,
+            "fs": 72,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-35",
+            "day": 21,
+            "time": "13.00",
+            "org": "เทศบาลปากน้ำปราณ",
+            "province": "ประจวบ",
+            "ft": 0,
+            "fs": 52,
+            "it": 0,
+            "is": 0,
+            "gen": 20,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-36",
+            "day": 22,
+            "time": "11.30",
+            "org": "ร.ร.สตรีทุ่งสง",
+            "province": "นครศรีธรรมราช",
+            "ft": 2,
+            "fs": 30,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ย.69-37",
+            "day": 23,
+            "time": "09.30",
+            "org": "ร.ร.บ้านห้วยมงคล",
+            "province": "ประจวบ",
+            "ft": 4,
+            "fs": 44,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-38",
+            "day": 23,
+            "time": "10.00-12.00",
+            "org": "ร.ร.บ้านหนองพลับ",
+            "province": "ประจวบ",
+            "ft": 12,
+            "fs": 86,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-39",
+            "day": 24,
+            "time": "10.00",
+            "org": "สกร.กำแพงเพชร",
+            "province": "กำแพงเพชร",
+            "ft": 0,
+            "fs": 0,
+            "it": 21,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-40",
+            "day": 25,
+            "time": "9.00-12.00",
+            "org": "โรงเรียนบ้านคลองลอย",
+            "province": "ประจวบ",
+            "ft": 8,
+            "fs": 81,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ย.69-42",
+            "day": 27,
+            "time": "",
+            "org": "ร.ร .กาญจนานุเคราะห์",
+            "province": "",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ก.ย.69-43",
+            "day": 28,
+            "time": "09.30",
+            "org": "ร.ร.แก่งกระจานวิทยา",
+            "province": "เพชรบุรี",
+            "ft": 0,
+            "fs": 400,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-44",
+            "day": 28,
+            "time": "13.30",
+            "org": "ร.ร.แก่งกระจานวิทยา",
+            "province": "เพชรบุรี",
+            "ft": 0,
+            "fs": 298,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "ณัฐพล"
+          },
+          {
+            "id": "ก.ย.69-45",
+            "day": 28,
+            "time": "14.00",
+            "org": "ศกร.ระนอง",
+            "province": "ระนอง",
+            "ft": 0,
+            "fs": 0,
+            "it": 5,
+            "is": 20,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-47",
+            "day": 30,
+            "time": "9.312.00",
+            "org": "ร.ร.วัดผสุดีผาราม",
+            "province": "ชุมพร",
+            "ft": 10,
+            "fs": 50,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-48",
+            "day": 30,
+            "time": "10.30",
+            "org": "ร.ร.วันทามารีอา",
+            "province": "ประจวบ",
+            "ft": 13,
+            "fs": 81,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ก.ย.69-49",
+            "day": 30,
+            "time": "ไม่ระบุ",
+            "org": "ร.ร.วัังชื้นวิทยา",
+            "province": "แพร่",
+            "ft": 45,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "ณัฐพล"
+          }
+        ],
+        "ต.ค.69": [
+          {
+            "id": "ต.ค.69-5",
+            "day": 2,
+            "time": "13.00-14.00",
+            "org": "โรงเรียนบ้านตำหรุ",
+            "province": "ประจวบ",
+            "ft": 22,
+            "fs": 258,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ต.ค.69-6",
+            "day": 2,
+            "time": "13.00",
+            "org": "ร.ร.ประทีปศาสน์",
+            "province": "นครศรีธรรมราช",
+            "ft": 6,
+            "fs": 86,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ต.ค.69-8",
+            "day": 4,
+            "time": "9.00-12.00",
+            "org": "ร.ร.มุสลิมสันติธรรมมูลนิธิ",
+            "province": "นครศรีธรรมราช",
+            "ft": 8,
+            "fs": 70,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ต.ค.69-10",
+            "day": 5,
+            "time": "13.00",
+            "org": "ร.ร.บ้านอ่าวลึกน้อย",
+            "province": "กระบี่",
+            "ft": 11,
+            "fs": 37,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "ณัฐพล"
+          },
+          {
+            "id": "ต.ค.69-11",
+            "day": 6,
+            "time": "11.00",
+            "org": "ร.ร.ฉวางรัชดาภิเษก",
+            "province": "นครศรีธรรมราช",
+            "ft": 3,
+            "fs": 37,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ต.ค.69-12",
+            "day": 7,
+            "time": "14.00-16.00",
+            "org": "สนง.เทศบาล ต.ลำเลียง",
+            "province": "ระนอง",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 24,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ต.ค.69-13",
+            "day": 8,
+            "time": "ไม่ระบุ",
+            "org": "ร.ร.พระแสงวิทยา",
+            "province": "สุราษฎร์ธานี",
+            "ft": 0,
+            "fs": 80,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ต.ค.69-14",
+            "day": 8,
+            "time": "09.00",
+            "org": "ร.ร.ป่าถล่ม",
+            "province": "ประจวบ",
+            "ft": 23,
+            "fs": 170,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ต.ค.69-15",
+            "day": 8,
+            "time": "11.00",
+            "org": "ร.ร.วัดนาสัก",
+            "province": "ชุมพร",
+            "ft": 17,
+            "fs": 71,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ต.ค.69-16",
+            "day": 9,
+            "time": "13.00-15.00",
+            "org": "ร.ร.บ้้านเนินดินแดง",
+            "province": "ประจวบ",
+            "ft": 10,
+            "fs": 50,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ต.ค.69-22",
+            "day": 14,
+            "time": "13.00",
+            "org": "ร.ร.สิชลคุณาธารวิทยา",
+            "province": "นครศรีธรรมราช",
+            "ft": 2,
+            "fs": 30,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ต.ค.69-30",
+            "day": 22,
+            "time": "14.00-16.30",
+            "org": "ศูนย์วิทยาศาสตร์เพื่อการศึกษานราธิวาส",
+            "province": "นราธิวาส",
+            "ft": 0,
+            "fs": 0,
+            "it": 16,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "ลัคนา"
+          },
+          {
+            "id": "ต.ค.69-33",
+            "day": 25,
+            "time": "00-15.00",
+            "org": "ร.ร.นานาชาตินครศรีธรรมราช",
+            "province": "นครศรีธรรมราช",
+            "ft": 0,
+            "fs": 136,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ต.ค.69-35",
+            "day": 27,
+            "time": "13.00",
+            "org": "โรงเรียนบ้านช้างตะลูด",
+            "province": "เพชรบูรณ์",
+            "ft": 22,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ต.ค.69-36",
+            "day": 28,
+            "time": "09.00",
+            "org": "โรงเรียนสกลวิทยา",
+            "province": "นครปฐม",
+            "ft": 0,
+            "fs": 188,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ต.ค.69-37",
+            "day": 29,
+            "time": "13.00-14.00",
+            "org": "ร.ร.หนองหานวิทยา",
+            "province": "อุดรธานี",
+            "ft": 35,
+            "fs": 320,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "ต.ค.69-38",
+            "day": 30,
+            "time": "9.00-12.00",
+            "org": "ชมรมครูและบุคลากรทางการศึกษานอกประจำการ",
+            "province": "อุุทัยธานี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 40,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          }
+        ],
+        "พ.ย.69": [
+          {
+            "id": "พ.ย.69-8",
+            "day": 5,
+            "time": "10.30",
+            "org": "ร.ร.บ้านคันธุลี",
+            "province": "สุราษฎร์ธานี",
+            "ft": 0,
+            "fs": 123,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "พ.ย.69-19",
+            "day": 13,
+            "time": "9.00-13.00",
+            "org": "โรงเรียนวัดน้อมถวาย",
+            "province": "ชุมพร",
+            "ft": 8,
+            "fs": 125,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "พ.ย.69-22",
+            "day": 16,
+            "time": "09.00",
+            "org": "ร.ร.แย้มสะอาด",
+            "province": "ประจวบ",
+            "ft": 8,
+            "fs": 92,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "วันเพ็ญ"
+          },
+          {
+            "id": "พ.ย.69-24",
+            "day": 18,
+            "time": "9.00-11.30",
+            "org": "โรงเรียนบ้านไชยราช",
+            "province": "ประจวบ",
+            "ft": 7,
+            "fs": 148,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": "นราธิป"
+          },
+          {
+            "id": "พ.ย.69-26",
+            "day": 20,
+            "time": "9.00-14.00",
+            "org": "ร.ร.บ้านเนินพยอม",
+            "province": "ประจวบ",
+            "ft": 16,
+            "fs": 75,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "พ.ย.69-29",
+            "day": 23,
+            "time": "09.00",
+            "org": "ร.ร.แย้มสะอาด",
+            "province": "ประจวบ",
+            "ft": 8,
+            "fs": 92,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "พ.ย.69-31",
+            "day": 25,
+            "time": "13.30-14.30",
+            "org": "คณะศิษย์เก่าวิทยาลัยวิชาการศึกษาบางแสน",
+            "province": "",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 70,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "พ.ย.69-32",
+            "day": 26,
+            "time": "10.00-14.15",
+            "org": "ร.ร.เรยีนาเชลีวิทยาลัย",
+            "province": "เชียงใหม่",
+            "ft": 16,
+            "fs": 117,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          }
+        ],
+        "ธ.ค.69": [
+          {
+            "id": "ธ.ค.69-6",
+            "day": 3,
+            "time": "8.30-12.00",
+            "org": "ร.ร.แม่สะเรียง",
+            "province": "แม่ฮ่องสอน",
+            "ft": 4,
+            "fs": 63,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ธ.ค.69-7",
+            "day": 3,
+            "time": "09.00 - 13.00 น.",
+            "org": "โรงเรียนชุมชนประชานิคม",
+            "province": "ชุมพร",
+            "ft": 9,
+            "fs": 151,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ธ.ค.69-9",
+            "day": 5,
+            "time": "10.30-12.00",
+            "org": "ร.ร.ท่าชนะ",
+            "province": "สุราษฏร์ธานี",
+            "ft": 16,
+            "fs": 170,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ธ.ค.69-17",
+            "day": 11,
+            "time": "9.00-11.30",
+            "org": "ร.ร.ห้วยหนำ",
+            "province": "ประจวบ",
+            "ft": 10,
+            "fs": 113,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ธ.ค.69-33",
+            "day": 26,
+            "time": "10.00-14.15",
+            "org": "ร.ร.เรยีนาเชลีวิทยาลัย",
+            "province": "เชียงใหม่",
+            "ft": 16,
+            "fs": 117,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ธ.ค.69-34",
+            "day": 26,
+            "time": "13.30-15.30",
+            "org": "ร.ร.โยธินบูรณะ",
+            "province": "กรุงเทพฯ",
+            "ft": 9,
+            "fs": 64,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          }
+        ],
+        "ม.ค.70": [
+          {
+            "id": "ม.ค.70-25",
+            "day": 19,
+            "time": "09:00 - 11:30 น.",
+            "org": "โรงเรียนมะอาฮัดอิสลามีย์ะห์",
+            "province": "ยะลา",
+            "ft": 10,
+            "fs": 34,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          }
+        ],
+        "ก.พ.70": [],
+        "มี.ค.70": []
+      };
+
+      const GAS_CODE_TEMPLATE = `/**
+ * ไฟล์เสริมสำหรับเว็บแอป ตารางนำชม_หว้ากอ (วางเพิ่มเป็นไฟล์ใหม่ชื่อ TourWebApp.gs)
+ * ใช้งานร่วมกับสคริปต์ LINE Bot เดิมได้โดยไม่ทับฟังก์ชันเดิม
+ *
+ * ขั้นตอน:
+ * 1) ใน Apps Script กดปุ่ม + เพิ่มไฟล์ Script ใหม่ชื่อ TourWebApp แล้ววางโค้ดนี้ลงไป
+ *    (หากใช้ "ดึงข้อมูลอย่างเดียว" ไม่ต้องแก้โค้ดเดิมเลย เพราะของเดิมยังไม่มี doGet)
+ * 2) หากต้องการให้เว็บแอป "เพิ่ม/แก้ไข/ลบ" ลงชีตได้ด้วย ให้แทรก 3 บรรทัดนี้ไว้บนสุดใน doPost(e) เดิม:
+ *    if (json && json.app === 'waghor_tour_web') return handleTourWebPost(json);
+ * 3) กด Deploy > Manage deployments > แก้ไขเป็น New version แล้วนำ URL มาวางที่นี่
+ */
+const TOUR_SPREADSHEET_ID = '14ADP9vp_OcTGnNszw8bNUptOQ6w1_EwaZMprUguqLYA';
+
+function doGet(e) {
+  try {
+    const ss = SpreadsheetApp.openById(TOUR_SPREADSHEET_ID);
+    const sheetName = (e && e.parameter && e.parameter.sheet) ? e.parameter.sheet : 'พ.ย.69';
+    let sheet = ss.getSheetByName(sheetName);
+    if (!sheet) {
+      const targetNorm = sheetName.replace(/\\s+/g, '');
+      sheet = ss.getSheets().find(s => s.getName().replace(/\\s+/g, '') === targetNorm) || null;
+    }
+    if (!sheet) return tourJsonResponse({ ok: false, error: 'ไม่พบแท็บชีต: ' + sheetName });
+
+    const lastRow = sheet.getLastRow();
+    const rows = [];
+
+    if (sheet.getName().trim() === '2/69') {
+      if (lastRow < 11) return tourJsonResponse({ ok: true, sheet: sheetName, rows: [] });
+      const values = sheet.getRange(11, 6, lastRow - 10, 9).getValues();
+      values.forEach((r, idx) => {
+        const org = String(r[1] || '').trim();
+        if (!org) return;
+        rows.push({
+          id: sheetName + '-' + (idx + 11),
+          rowNumber: idx + 11,
+          day: Number(r[0]) || (idx + 1),
+          time: '',
+          org: org,
+          province: String(r[2] || '').trim(),
+          ft: Number(r[3]) || 0,
+          fs: Number(r[4]) || 0,
+          it: Number(r[5]) || 0,
+          is: Number(r[6]) || 0,
+          gen: Number(r[7]) || 0,
+          speaker: 'ขอ',
+          assignee: String(r[8] || '').trim()
+        });
+      });
+    } else {
+      if (lastRow < 4) return tourJsonResponse({ ok: true, sheet: sheetName, rows: [] });
+      const values = sheet.getRange(4, 1, lastRow - 3, 11).getValues();
+      let lastDay = 1;
+      values.forEach((r, idx) => {
+        const dNum = Number(r[0]);
+        if (dNum >= 1 && dNum <= 31) lastDay = dNum;
+        const org = String(r[2] || '').trim();
+        if (!org) return;
+        rows.push({
+          id: sheetName + '-' + (idx + 4),
+          rowNumber: idx + 4,
+          day: (dNum >= 1 && dNum <= 31) ? dNum : lastDay,
+          time: String(r[1] || '').trim(),
+          org: org,
+          province: String(r[3] || '').trim(),
+          ft: Number(r[4]) || 0,
+          fs: Number(r[5]) || 0,
+          it: Number(r[6]) || 0,
+          is: Number(r[7]) || 0,
+          gen: Number(r[8]) || 0,
+          speaker: String(r[9] || '').indexOf('ไม่') >= 0 ? 'ไม่ขอ' : 'ขอ',
+          assignee: String(r[10] || '').trim()
+        });
+      });
+    }
+    return tourJsonResponse({ ok: true, sheet: sheetName, rows: rows });
+  } catch (err) {
+    return tourJsonResponse({ ok: false, error: err.message });
+  }
+}
+
+function handleTourWebPost(body) {
+  try {
+    const ss = SpreadsheetApp.openById(TOUR_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(body.sheet);
+    if (!sheet) return tourJsonResponse({ ok: false, error: 'ไม่พบแท็บชีต: ' + body.sheet });
+
+    const r = body.record;
+    const rowValues = [
+      Number(r.day) || '',
+      tourSanitizeCell(r.time),
+      tourSanitizeCell(r.org),
+      tourSanitizeCell(r.province),
+      Number(r.ft) || '',
+      Number(r.fs) || '',
+      Number(r.it) || '',
+      Number(r.is) || '',
+      Number(r.gen) || '',
+      r.speaker === 'ไม่ขอ' ? 'ไม่ขอ' : 'ขอ',
+      tourSanitizeCell(r.assignee)
+    ];
+
+    if (body.action === 'delete' && r.rowNumber) {
+      sheet.deleteRow(Number(r.rowNumber));
+      return tourJsonResponse({ ok: true, action: 'deleted' });
+    }
+    if (body.action === 'update' && r.rowNumber) {
+      sheet.getRange(Number(r.rowNumber), 1, 1, 11).setValues([rowValues]);
+      return tourJsonResponse({ ok: true, action: 'updated' });
+    }
+    sheet.appendRow(rowValues);
+    return tourJsonResponse({ ok: true, action: 'created' });
+  } catch (err) {
+    return tourJsonResponse({ ok: false, error: err.message });
+  }
+}
+
+function tourSanitizeCell(val) {
+  const s = String(val || '').trim();
+  return /^[=+\\-@]/.test(s) ? "'" + s : s;
+}
+
+function tourJsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+
+      // ============================================================
+      // 2. STATE & STORAGE (vibesec-skill safe wrappers)
+      // ============================================================
+      const STORAGE_KEY = 'waghor_tour_schedule_v2';
+      const GAS_URL_KEY = 'waghor_tour_gas_url_v1';
+      const THEME_KEY = 'waghor_tour_theme_v1';
+
+      const state = {
+        data: {},
+        currentSheet: '2/69',
+        activeTab: 'schedule',
+        search: '',
+        filterSpeaker: 'all',
+        filterAssignee: 'all',
+        filterCategory: 'all',
+        selectedDay: 12,
+        isLocked: false,
+        pinCode: '1234',
+        pendingDeleteId: null,
+        gasUrl: '',
+        charts: { category: null, province: null, staff: null }
+      };
+
+      function safeGetStorage(key) {
+        try { return localStorage.getItem(key); } catch (_) { return null; }
+      }
+      function safeSetStorage(key, val) {
+        try { localStorage.setItem(key, val); } catch (_) {}
+      }
+
+      function cloneInitialData() {
+        return JSON.parse(JSON.stringify(INITIAL_DATA));
+      }
+
+      function loadState() {
+        const saved = safeGetStorage(STORAGE_KEY);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (parsed && typeof parsed === 'object') {
+              state.data = parsed;
+            }
+          } catch (_) {
+            state.data = cloneInitialData();
+          }
+        } else {
+          state.data = cloneInitialData();
+        }
+        SHEET_TABS.forEach(tab => {
+          if (!Array.isArray(state.data[tab])) state.data[tab] = [];
+        });
+
+        state.gasUrl = safeGetStorage(GAS_URL_KEY) || '';
+        const savedTheme = safeGetStorage(THEME_KEY);
+        if (savedTheme === 'dark' || savedTheme === 'light') {
+          document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+      }
+
+      function saveState() {
+        safeSetStorage(STORAGE_KEY, JSON.stringify(state.data));
+      }
+
+      // ============================================================
+      // 3. SECURITY & FORMATTING HELPERS (vibesec-skill)
+      // ============================================================
+      function escapeHtml(str) {
+        return String(str == null ? '' : str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function isValidGasUrl(url) {
+        return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url.trim());
+      }
+
+      function safeCsvCell(val) {
+        let s = String(val == null ? '' : val).replace(/"/g, '""');
+        if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+        return '"' + s + '"';
+      }
+
+      function getRowTotal(r) {
+        return (Number(r.ft) || 0) + (Number(r.fs) || 0) + (Number(r.it) || 0) + (Number(r.is) || 0) + (Number(r.gen) || 0);
+      }
+
+      function formatNum(n) {
+        return (Number(n) || 0).toLocaleString('th-TH');
+      }
+
+      function copyToClipboard(text, successMsg) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => showToast(successMsg, 'success')).catch(() => fallbackCopy(text, successMsg));
+        } else {
+          fallbackCopy(text, successMsg);
+        }
+      }
+
+      function fallbackCopy(text, successMsg) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast(successMsg, 'success');
+        } catch (_) {
+          showToast('ไม่สามารถคัดลอกได้ กรุณาคัดลอกด้วยตนเอง', 'error');
+        }
+        document.body.removeChild(ta);
+      }
+
+      function showToast(message, type) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        const bg = type === 'error' ? '#E11D48' : type === 'warning' ? '#EA580C' : '#059669';
+        toast.className = 'toast-item pointer-events-auto px-4 py-3 rounded-xl text-white text-sm font-medium shadow-lg flex items-center gap-2.5';
+        toast.style.background = bg;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(8px)';
+          toast.style.transition = 'opacity 180ms ease, transform 180ms ease';
+          setTimeout(() => toast.remove(), 200);
+        }, 2800);
+      }
+
+      // ============================================================
+      // 4. DATA FILTERING & COMPUTATION
+      // ============================================================
+      function getCurrentRows() {
+        return state.data[state.currentSheet] || [];
+      }
+
+      function getFilteredRows() {
+        const rows = getCurrentRows();
+        const q = state.search.trim().toLowerCase();
+        return rows.filter(r => {
+          if (q) {
+            const hay = `${r.org} ${r.province} ${r.assignee} ${r.time} ${r.day}`.toLowerCase();
+            if (!hay.includes(q)) return false;
+          }
+          if (state.filterSpeaker !== 'all' && r.speaker !== state.filterSpeaker) return false;
+          if (state.filterAssignee === 'unassigned') {
+            if (r.assignee && r.assignee.trim() !== '') return false;
+          } else if (state.filterAssignee !== 'all') {
+            if (r.assignee !== state.filterAssignee) return false;
+          }
+          if (state.filterCategory === 'formal' && ((r.ft || 0) + (r.fs || 0) === 0)) return false;
+          if (state.filterCategory === 'informal' && ((r.it || 0) + (r.is || 0) === 0)) return false;
+          if (state.filterCategory === 'general' && ((r.gen || 0) === 0)) return false;
+          return true;
+        }).sort((a, b) => (a.day - b.day) || String(a.time).localeCompare(String(b.time)));
+      }
+
+      function getUniqueStaffList() {
+        const set = new Set(['นราธิป', 'ณัฐพล']);
+        getCurrentRows().forEach(r => {
+          if (r.assignee && r.assignee.trim()) set.add(r.assignee.trim());
+        });
+        return Array.from(set);
+      }
+
+      function buildLineMessage(r) {
+        const total = getRowTotal(r);
+        const parts = [];
+        if (r.ft || r.fs) parts.push(`ในระบบ: ครู ${r.ft || 0} / นร. ${r.fs || 0}`);
+        if (r.it || r.is) parts.push(`นอกระบบ: ครู ${r.it || 0} / นร. ${r.is || 0}`);
+        if (r.gen) parts.push(`ทั่วไป: ${r.gen}`);
+        return [
+          `ตารางนำชม พิพิธภัณฑ์สัตว์น้ำหว้ากอ (${state.currentSheet})`,
+          `วันที่: ${r.day} | เวลา: ${r.time || 'ไม่ระบุ'}`,
+          `หน่วยงาน: ${r.org}`,
+          `จังหวัด: ${r.province || 'ไม่ระบุ'}`,
+          `จำนวน: ${formatNum(total)} คน (${parts.join(', ') || 'ไม่ระบุจำนวน'})`,
+          `วิทยากร: ${r.speaker === 'ขอ' ? 'ขอความอนุเคราะห์' : 'ไม่ได้ขอ'}`,
+          `ผู้รับผิดชอบ: ${r.assignee || 'ยังไม่มอบหมาย'}`
+        ].join('\n');
+      }
+
+      // ============================================================
+      // 5. RENDERING: KPIs, SCHEDULE TABLE & MOBILE CARDS
+      // ============================================================
+      function renderAll() {
+        const topSel = document.getElementById('sheetSelector');
+        const schedSel = document.getElementById('scheduleMonthSelect');
+        if (topSel && topSel.value !== state.currentSheet) topSel.value = state.currentSheet;
+        if (schedSel && schedSel.value !== state.currentSheet) schedSel.value = state.currentSheet;
+        const badge = document.getElementById('monthRowBadge');
+        if (badge) badge.textContent = `${formatNum(getCurrentRows().length)} คณะ`;
+
+        renderKPIs();
+        renderSchedule();
+        renderCalendar();
+        if (state.activeTab === 'analytics') {
+          renderAnalytics();
+        }
+        updateLockUI();
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      function renderKPIs() {
+        const rows = getCurrentRows();
+        let ft = 0, fs = 0, it = 0, is = 0, gen = 0, speakerReq = 0, unassigned = 0;
+        const provSet = new Set();
+
+        rows.forEach(r => {
+          ft += Number(r.ft) || 0;
+          fs += Number(r.fs) || 0;
+          it += Number(r.it) || 0;
+          is += Number(r.is) || 0;
+          gen += Number(r.gen) || 0;
+          if (r.speaker === 'ขอ') speakerReq++;
+          if (!r.assignee || !r.assignee.trim()) unassigned++;
+          if (r.province && r.province.trim()) provSet.add(r.province.trim().replace(/ฯ$/, ''));
+        });
+
+        const totalVisitors = ft + fs + it + is + gen;
+        const pct = rows.length ? Math.round((speakerReq / rows.length) * 100) : 0;
+
+        document.getElementById('kpiGroups').textContent = formatNum(rows.length);
+        document.getElementById('kpiProvincesSub').textContent = `ครอบคลุม ${provSet.size} จังหวัด`;
+        document.getElementById('kpiVisitors').textContent = formatNum(totalVisitors);
+        document.getElementById('kpiCategorySub').textContent = `ในระบบ ${formatNum(ft + fs)} · นอกระบบ ${formatNum(it + is)} · ทั่วไป ${formatNum(gen)}`;
+        document.getElementById('kpiSpeakerReq').textContent = formatNum(speakerReq);
+        document.getElementById('kpiSpeakerPct').textContent = `คิดเป็น ${pct}% ของคณะทั้งหมด`;
+        document.getElementById('kpiUnassigned').textContent = formatNum(unassigned);
+        document.getElementById('kpiStaffSummary').textContent = `มอบหมายแล้ว ${formatNum(rows.length - unassigned)} คณะ`;
+      }
+
+      function renderSchedule() {
+        const filtered = getFilteredRows();
+        const staffList = getUniqueStaffList();
+        const tbody = document.getElementById('scheduleTableBody');
+        const emptyState = document.getElementById('emptyTableState');
+        const mobileList = document.getElementById('mobileCardList');
+
+        document.getElementById('filteredCountText').textContent =
+          `แสดง ${formatNum(filtered.length)} จากทั้งหมด ${formatNum(getCurrentRows().length)} คณะ (แท็บ ${state.currentSheet})`;
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = '';
+          emptyState.classList.remove('hidden');
+          mobileList.innerHTML = `
+            <div class="glass-card rounded-2xl p-8 text-center">
+              <p class="font-semibold">ไม่พบคณะเข้าชมตามเงื่อนไขที่เลือก</p>
+              <p class="text-xs mt-1" style="color: var(--ink-muted);">ลองล้างตัวกรอง หรือเลือกเดือนอื่นจากเมนูด้านบน</p>
+            </div>`;
+          return;
+        }
+        emptyState.classList.add('hidden');
+
+        // Desktop Table Rows
+        tbody.innerHTML = filtered.map(r => {
+          const total = getRowTotal(r);
+          const speakerBadge = r.speaker === 'ขอ'
+            ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--orange-soft); color: var(--orange-600);"><span class="w-1.5 h-1.5 rounded-full" style="background: var(--orange-500);"></span>ขอวิทยากร</span>`
+            : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium" style="background: var(--sky-soft); color: var(--blue-600);">ไม่ขอ</span>`;
+
+          const staffOptions = [`<option value="">— ยังไม่ระบุ —</option>`]
+            .concat(staffList.map(s => `<option value="${escapeHtml(s)}" ${r.assignee === s ? 'selected' : ''}>${escapeHtml(s)}</option>`))
+            .join('');
+
+          return `
+            <tr class="schedule-row">
+              <td class="py-3 px-3.5 font-mono-num font-bold text-sm" style="color: var(--blue-600);">${escapeHtml(r.day)}</td>
+              <td class="py-3 px-3 font-mono-num text-xs" style="color: var(--ink-secondary);">${escapeHtml(r.time || '—')}</td>
+              <td class="py-3 px-3 font-semibold max-w-xs truncate" title="${escapeHtml(r.org)}">${escapeHtml(r.org)}</td>
+              <td class="py-3 px-3 text-xs" style="color: var(--ink-secondary);">${escapeHtml(r.province || '—')}</td>
+              <td class="py-3 px-2.5 text-right font-mono-num text-xs">${r.ft || r.fs ? `${formatNum(r.ft)} / ${formatNum(r.fs)}` : '—'}</td>
+              <td class="py-3 px-2.5 text-right font-mono-num text-xs">${r.it || r.is ? `${formatNum(r.it)} / ${formatNum(r.is)}` : '—'}</td>
+              <td class="py-3 px-2.5 text-right font-mono-num text-xs">${r.gen ? formatNum(r.gen) : '—'}</td>
+              <td class="py-3 px-3 text-right font-mono-num font-bold">${formatNum(total)}</td>
+              <td class="py-3 px-3">${speakerBadge}</td>
+              <td class="py-3 px-3">
+                <select data-assign-id="${escapeHtml(r.id)}" ${state.isLocked ? 'disabled' : ''} class="w-full rounded-lg px-2 py-1.5 text-xs font-medium border cursor-pointer disabled:opacity-60" style="background: var(--surface-solid); border-color: var(--border-strong); color: var(--ink);">
+                  ${staffOptions}
+                </select>
+              </td>
+              <td class="py-3 px-3 text-right">
+                <div class="inline-flex items-center gap-1">
+                  <button type="button" data-copy-line="${escapeHtml(r.id)}" class="btn-compact w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--emerald-soft); color: var(--emerald-600);" title="คัดลอกแจ้งเตือน LINE" aria-label="คัดลอกแจ้งเตือน LINE">
+                    <i data-lucide="message-square-share" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <button type="button" data-edit-id="${escapeHtml(r.id)}" class="btn-compact w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--sky-soft); color: var(--blue-600);" title="แก้ไข" aria-label="แก้ไขรายการ">
+                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <button type="button" data-delete-id="${escapeHtml(r.id)}" class="btn-compact w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--rose-soft); color: var(--rose-600);" title="ลบ" aria-label="ลบรายการ">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>`;
+        }).join('');
+
+        // Mobile Cards
+        mobileList.innerHTML = filtered.map(r => {
+          const total = getRowTotal(r);
+          const speakerTag = r.speaker === 'ขอ'
+            ? `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold" style="background: var(--orange-soft); color: var(--orange-600);">ขอวิทยากร</span>`
+            : `<span class="px-2.5 py-0.5 rounded-full text-xs font-medium" style="background: var(--sky-soft); color: var(--blue-600);">ไม่ขอ</span>`;
+
+          return `
+            <article class="glass-card rounded-2xl p-4 space-y-3">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 text-xs font-mono-num" style="color: var(--blue-600);">
+                    <span class="font-bold">วันที่ ${escapeHtml(r.day)}</span>
+                    <span style="color: var(--ink-muted);">• ${escapeHtml(r.time || 'ไม่ระบุเวลา')}</span>
+                  </div>
+                  <h3 class="font-bold text-sm mt-1 leading-snug">${escapeHtml(r.org)}</h3>
+                  <p class="text-xs mt-0.5" style="color: var(--ink-muted);">${escapeHtml(r.province || 'ไม่ระบุจังหวัด')}</p>
+                </div>
+                <div class="text-right shrink-0">
+                  <div class="text-lg font-bold font-mono-num">${formatNum(total)} <span class="text-xs font-normal" style="color: var(--ink-muted);">คน</span></div>
+                  <div class="mt-1">${speakerTag}</div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between pt-2.5 border-t gap-2" style="border-color: var(--border);">
+                <span class="text-xs font-medium" style="color: var(--ink-secondary);">วิทยากร: <strong>${escapeHtml(r.assignee || 'ยังไม่มอบหมาย')}</strong></span>
+                <div class="flex items-center gap-1.5">
+                  <button type="button" data-copy-line="${escapeHtml(r.id)}" class="btn-compact px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1" style="background: var(--emerald-soft); color: var(--emerald-600);">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i><span>LINE</span>
+                  </button>
+                  <button type="button" data-edit-id="${escapeHtml(r.id)}" class="btn-compact px-2.5 rounded-lg text-xs font-semibold" style="background: var(--sky-soft); color: var(--blue-600);">แก้ไข</button>
+                  <button type="button" data-delete-id="${escapeHtml(r.id)}" class="btn-compact w-9 rounded-lg flex items-center justify-center" style="background: var(--rose-soft); color: var(--rose-600);" aria-label="ลบ">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+            </article>`;
+        }).join('');
+      }
+
+      // ============================================================
+      // 6. RENDERING: CALENDAR VIEW
+      // ============================================================
+      function renderCalendar() {
+        const rows = getCurrentRows();
+        const byDay = {};
+        rows.forEach(r => {
+          const d = Number(r.day) || 1;
+          if (!byDay[d]) byDay[d] = [];
+          byDay[d].push(r);
+        });
+
+        document.getElementById('calendarTitle').textContent = `ปฏิทินคิวเข้าชม — แท็บ ${state.currentSheet}`;
+        const grid = document.getElementById('calendarGrid');
+        let html = '';
+        for (let d = 1; d <= 31; d++) {
+          const list = byDay[d] || [];
+          const isSelected = d === state.selectedDay;
+          const totalDayVisitors = list.reduce((acc, r) => acc + getRowTotal(r), 0);
+          const dots = list.slice(0, 4).map(r =>
+            `<span class="w-2 h-2 rounded-full" style="background: ${r.speaker === 'ขอ' ? 'var(--orange-500)' : 'var(--sky-500)'};"></span>`
+          ).join('');
+
+          html += `
+            <button type="button" data-cal-day="${d}" class="cal-cell ${isSelected ? 'selected' : ''} rounded-xl p-2 text-left flex flex-col justify-between cursor-pointer">
+              <div class="flex items-center justify-between w-full">
+                <span class="font-mono-num text-xs font-bold ${isSelected ? 'text-blue-600' : ''}">${d}</span>
+                ${list.length ? `<span class="font-mono-num text-[10px] px-1.5 py-0.5 rounded-md font-semibold" style="background: var(--surface-2); color: var(--ink-secondary);">${list.length}</span>` : ''}
+              </div>
+              <div class="mt-2">
+                ${list.length ? `<div class="flex items-center gap-1 flex-wrap mb-1">${dots}</div><div class="font-mono-num text-[10px] truncate" style="color: var(--ink-muted);">${formatNum(totalDayVisitors)} คน</div>` : `<span class="text-[10px] opacity-30">—</span>`}
+              </div>
+            </button>`;
+        }
+        grid.innerHTML = html;
+
+        // Selected Day Panel
+        const dayRows = byDay[state.selectedDay] || [];
+        const dayVisitors = dayRows.reduce((s, r) => s + getRowTotal(r), 0);
+        document.getElementById('selectedDayTitle').textContent = `วันที่ ${state.selectedDay} (${state.currentSheet})`;
+        document.getElementById('selectedDayMeta').textContent = `${dayRows.length} คณะ · รวม ${formatNum(dayVisitors)} คน`;
+
+        const dayListEl = document.getElementById('selectedDayList');
+        if (dayRows.length === 0) {
+          dayListEl.innerHTML = `
+            <div class="py-10 text-center text-sm" style="color: var(--ink-muted);">
+              ไม่มีคิวคณะเข้าชมในวันที่ ${state.selectedDay}
+            </div>`;
+        } else {
+          dayListEl.innerHTML = dayRows.map(r => `
+            <div class="p-3.5 rounded-xl border space-y-2" style="background: var(--surface-2); border-color: var(--border);">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <span class="font-mono-num text-xs font-semibold" style="color: var(--blue-600);">${escapeHtml(r.time || 'ไม่ระบุเวลา')}</span>
+                  <h4 class="font-bold text-sm leading-snug mt-0.5">${escapeHtml(r.org)}</h4>
+                  <p class="text-xs" style="color: var(--ink-muted);">${escapeHtml(r.province || 'ไม่ระบุจังหวัด')} · ${formatNum(getRowTotal(r))} คน</p>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0" style="background: ${r.speaker === 'ขอ' ? 'var(--orange-soft)' : 'var(--sky-soft)'}; color: ${r.speaker === 'ขอ' ? 'var(--orange-600)' : 'var(--blue-600)'};">
+                  ${escapeHtml(r.speaker)}
+                </span>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t text-xs" style="border-color: var(--border);">
+                <span>ผู้รับผิดชอบ: <strong>${escapeHtml(r.assignee || 'ยังไม่มอบหมาย')}</strong></span>
+                <div class="flex items-center gap-1">
+                  <button type="button" data-copy-line="${escapeHtml(r.id)}" class="btn-compact px-2 rounded-md font-semibold" style="background: var(--emerald-soft); color: var(--emerald-600);">คัดลอก LINE</button>
+                  <button type="button" data-edit-id="${escapeHtml(r.id)}" class="btn-compact px-2 rounded-md font-semibold" style="background: var(--sky-soft); color: var(--blue-600);">แก้ไข</button>
+                </div>
+              </div>
+            </div>`).join('');
+        }
+      }
+
+      // ============================================================
+      // 7. RENDERING: ANALYTICS & CHARTS
+      // ============================================================
+      function renderAnalytics() {
+        const rows = getCurrentRows();
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const textColor = isDark ? '#CBD5E1' : '#334155';
+        const gridColor = isDark ? 'rgba(148,163,184,0.14)' : 'rgba(15,23,42,0.08)';
+
+        let ft = 0, fs = 0, it = 0, is = 0, gen = 0;
+        const provMap = {};
+        const staffMap = {};
+
+        rows.forEach(r => {
+          ft += Number(r.ft) || 0;
+          fs += Number(r.fs) || 0;
+          it += Number(r.it) || 0;
+          is += Number(r.is) || 0;
+          gen += Number(r.gen) || 0;
+
+          const p = (r.province || 'ไม่ระบุจังหวัด').trim().replace(/ฯ$/, '');
+          provMap[p] = (provMap[p] || 0) + getRowTotal(r);
+
+          const st = (r.assignee || 'ยังไม่มอบหมาย').trim();
+          staffMap[st] = (staffMap[st] || 0) + 1;
+        });
+
+        const total = ft + fs + it + is + gen;
+        const breakdownRows = [
+          { label: 'ในระบบ — ครู / อาจารย์', count: ft },
+          { label: 'ในระบบ — นักเรียน / นักศึกษา', count: fs },
+          { label: 'นอกระบบ (ศกร.) — ครู', count: it },
+          { label: 'นอกระบบ (ศกร.) — นักเรียน', count: is },
+          { label: 'ประชาชนทั่วไป / หน่วยงาน', count: gen }
+        ];
+
+        document.getElementById('summaryBreakdownBody').innerHTML = breakdownRows.map(b => {
+          const pct = total ? ((b.count / total) * 100).toFixed(1) : '0.0';
+          return `
+            <tr class="border-b" style="border-color: var(--border);">
+              <td class="py-2.5 px-3 font-medium">${escapeHtml(b.label)}</td>
+              <td class="py-2.5 px-3 text-right font-mono-num font-semibold">${formatNum(b.count)}</td>
+              <td class="py-2.5 px-3 text-right font-mono-num" style="color: var(--ink-muted);">${pct}%</td>
+            </tr>`;
+        }).join('') + `
+          <tr class="font-bold" style="background: var(--surface-2);">
+            <td class="py-3 px-3">รวมยอดผู้เข้าชมทั้งหมด (${formatNum(rows.length)} คณะ)</td>
+            <td class="py-3 px-3 text-right font-mono-num" style="color: var(--blue-600);">${formatNum(total)}</td>
+            <td class="py-3 px-3 text-right font-mono-num">100.0%</td>
+          </tr>`;
+
+        // Destroy old charts cleanly
+        Object.keys(state.charts).forEach(k => {
+          if (state.charts[k]) { state.charts[k].destroy(); state.charts[k] = null; }
+        });
+
+        if (typeof Chart === 'undefined') return;
+
+        // 1. Category Doughnut
+        state.charts.category = new Chart(document.getElementById('categoryChart'), {
+          type: 'doughnut',
+          data: {
+            labels: ['ในระบบ (ครู)', 'ในระบบ (นร.)', 'นอกระบบ (ครู)', 'นอกระบบ (นร.)', 'ทั่วไป'],
+            datasets: [{
+              data: [ft, fs, it, is, gen],
+              backgroundColor: ['#1D4ED8', '#0EA5E9', '#0D9488', '#059669', '#F97316'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '62%',
+            plugins: {
+              legend: { position: 'bottom', labels: { color: textColor, boxWidth: 10, font: { family: 'IBM Plex Sans Thai', size: 11 } } }
+            }
+          }
+        });
+
+        // 2. Top Provinces Bar
+        const topProvs = Object.entries(provMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+        state.charts.province = new Chart(document.getElementById('provinceChart'), {
+          type: 'bar',
+          data: {
+            labels: topProvs.map(x => x[0]),
+            datasets: [{
+              label: 'จำนวนผู้เข้าชม (คน)',
+              data: topProvs.map(x => x[1]),
+              backgroundColor: '#0EA5E9',
+              borderRadius: 6
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: textColor }, grid: { color: gridColor } },
+              y: { ticks: { color: textColor, font: { family: 'IBM Plex Sans Thai', size: 11 } }, grid: { display: false } }
+            }
+          }
+        });
+
+        // 3. Staff Workload Bar
+        const staffEntries = Object.entries(staffMap).sort((a, b) => b[1] - a[1]);
+        state.charts.staff = new Chart(document.getElementById('staffChart'), {
+          type: 'bar',
+          data: {
+            labels: staffEntries.map(x => x[0]),
+            datasets: [{
+              label: 'จำนวนคณะ',
+              data: staffEntries.map(x => x[1]),
+              backgroundColor: staffEntries.map(x => x[0] === 'ยังไม่มอบหมาย' ? '#E11D48' : '#1D4ED8'),
+              borderRadius: 8
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, ticks: { stepSize: 5, color: textColor }, grid: { color: gridColor } },
+              x: { ticks: { color: textColor, font: { family: 'IBM Plex Sans Thai', size: 12 } }, grid: { display: false } }
+            }
+          }
+        });
+      }
+
+      // ============================================================
+      // 8. MODAL, CRUD & LOCK HANDLERS
+      // ============================================================
+      function requireUnlocked() {
+        if (!state.isLocked) return true;
+        showToast('ระบบถูกล็อกอยู่ กรุณาปลดล็อกโหมดแก้ไขก่อน', 'warning');
+        openPinModal();
+        return false;
+      }
+
+      function updateLockUI() {
+        const btn = document.getElementById('lockModeBtn');
+        const label = document.getElementById('lockModeLabel');
+        if (state.isLocked) {
+          btn.style.borderColor = 'var(--orange-500)';
+          btn.style.color = 'var(--orange-600)';
+          label.textContent = 'ล็อกดูอย่างเดียว';
+          btn.querySelector('svg, i')?.setAttribute('data-lucide', 'lock');
+        } else {
+          btn.style.borderColor = 'var(--border-strong)';
+          btn.style.color = 'var(--ink-secondary)';
+          label.textContent = 'โหมดแก้ไข';
+          btn.querySelector('svg, i')?.setAttribute('data-lucide', 'unlock');
+        }
+      }
+
+      function openBookingModal(record) {
+        if (!record) return;
+        if (!requireUnlocked()) return;
+        const modal = document.getElementById('bookingModal');
+        document.getElementById('modalTitle').textContent = 'แก้ไขข้อมูลคณะเข้าชม';
+        document.getElementById('editRecordId').value = record ? record.id : '';
+        document.getElementById('fieldDay').value = record ? record.day : (presetDay || 1);
+        document.getElementById('fieldTime').value = record ? (record.time || '') : '09.00-10.30';
+        document.getElementById('fieldOrg').value = record ? record.org : '';
+        document.getElementById('fieldProvince').value = record ? (record.province || '') : '';
+        document.getElementById('fieldFormalTeacher').value = record ? (record.ft || 0) : 0;
+        document.getElementById('fieldFormalStudent').value = record ? (record.fs || 0) : 0;
+        document.getElementById('fieldInformalTeacher').value = record ? (record.it || 0) : 0;
+        document.getElementById('fieldInformalStudent').value = record ? (record.is || 0) : 0;
+        document.getElementById('fieldGeneral').value = record ? (record.gen || 0) : 0;
+        document.getElementById('fieldSpeaker').value = record ? (record.speaker || 'ขอ') : 'ขอ';
+        document.getElementById('fieldAssignee').value = record ? (record.assignee || '') : '';
+        updateFormTotalPreview();
+        modal.classList.remove('hidden');
+        document.getElementById('fieldOrg').focus();
+      }
+
+      function closeBookingModal() {
+        document.getElementById('bookingModal').classList.add('hidden');
+      }
+
+      function updateFormTotalPreview() {
+        const sum =
+          (Number(document.getElementById('fieldFormalTeacher').value) || 0) +
+          (Number(document.getElementById('fieldFormalStudent').value) || 0) +
+          (Number(document.getElementById('fieldInformalTeacher').value) || 0) +
+          (Number(document.getElementById('fieldInformalStudent').value) || 0) +
+          (Number(document.getElementById('fieldGeneral').value) || 0);
+        document.getElementById('formTotalPreview').textContent = formatNum(sum);
+      }
+
+      function openDeleteModal(id) {
+        if (!requireUnlocked()) return;
+        const r = getCurrentRows().find(x => x.id === id);
+        if (!r) return;
+        state.pendingDeleteId = id;
+        document.getElementById('deleteModalDesc').textContent = `ต้องการลบคณะ "${r.org}" (วันที่ ${r.day}) ออกจากแท็บ ${state.currentSheet} ใช่หรือไม่?`;
+        document.getElementById('deleteModal').classList.remove('hidden');
+      }
+
+      function closeDeleteModal() {
+        state.pendingDeleteId = null;
+        document.getElementById('deleteModal').classList.add('hidden');
+      }
+
+      function openPinModal() {
+        document.getElementById('pinInput').value = '';
+        document.getElementById('pinError').classList.add('hidden');
+        document.getElementById('pinModal').classList.remove('hidden');
+        document.getElementById('pinInput').focus();
+      }
+
+      function closePinModal() {
+        document.getElementById('pinModal').classList.add('hidden');
+      }
+
+      // ============================================================
+      // 9. LIVE SYNC WITH GOOGLE APPS SCRIPT (Optional)
+      // ============================================================
+      async function syncFromGas(targetSheet) {
+        const sheetToFetch = typeof targetSheet === 'string' && targetSheet ? targetSheet : state.currentSheet;
+        const url = state.gasUrl.trim();
+        if (!url || !isValidGasUrl(url)) {
+          showToast('กรุณาตั้งค่า Apps Script URL ในแท็บ "เชื่อมชีต & Apps Script" ก่อนดึงข้อมูลสด', 'warning');
+          const syncTabBtn = document.querySelector('.tab-btn[data-tab="sync"]');
+          if (syncTabBtn) syncTabBtn.click();
+          return;
+        }
+        const statusText = document.getElementById('syncStatusText');
+        const fetchBtn = document.getElementById('fetchMonthBtn');
+        statusText.textContent = `กำลังดึงข้อมูลเดือน ${SHEET_LABELS[sheetToFetch] || sheetToFetch}...`;
+        if (fetchBtn) fetchBtn.disabled = true;
+        try {
+          const res = await fetch(`${url}?sheet=${encodeURIComponent(sheetToFetch)}`);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const json = await res.json();
+          if (!json.ok) throw new Error(json.error || 'เกิดข้อผิดพลาดจากสคริปต์');
+          state.data[sheetToFetch] = Array.isArray(json.rows) ? json.rows : [];
+          saveState();
+          renderAll();
+          statusText.textContent = `ซิงค์เดือน ${sheetToFetch} สำเร็จ (${state.data[sheetToFetch].length} คณะ)`;
+          showToast(`ดึงข้อมูลเดือน ${SHEET_LABELS[sheetToFetch] || sheetToFetch} เรียบร้อย (${state.data[sheetToFetch].length} คณะ)`, 'success');
+        } catch (err) {
+          statusText.textContent = 'โหมดออฟไลน์ / ข้อมูลในเครื่อง';
+          showToast('เชื่อมต่อชีตไม่สำเร็จ: ' + err.message, 'error');
+        } finally {
+          if (fetchBtn) fetchBtn.disabled = false;
+        }
+      }
+
+      async function pushToGas(action, record) {
+        const url = state.gasUrl.trim();
+        if (!url || !isValidGasUrl(url)) return;
+        try {
+          await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ app: 'waghor_tour_web', action, sheet: state.currentSheet, record })
+          });
+        } catch (_) {
+          // Non-blocking fallback: local state already updated
+        }
+      }
+
+      // ============================================================
+      // 10. EVENT BINDINGS & INIT
+      // ============================================================
+      function bindEvents() {
+        // Sheet & Month selectors (kept in sync)
+        const sheetSel = document.getElementById('sheetSelector');
+        const schedMonthSel = document.getElementById('scheduleMonthSelect');
+        const optionsHtml = SHEET_TABS.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(SHEET_LABELS[t] || t)}</option>`).join('');
+        sheetSel.innerHTML = SHEET_TABS.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+        schedMonthSel.innerHTML = optionsHtml;
+        sheetSel.value = state.currentSheet;
+        schedMonthSel.value = state.currentSheet;
+
+        function handleMonthChange(nextSheet) {
+          state.currentSheet = nextSheet;
+          sheetSel.value = nextSheet;
+          schedMonthSel.value = nextSheet;
+          renderAll();
+        }
+
+        sheetSel.addEventListener('change', (e) => handleMonthChange(e.target.value));
+        schedMonthSel.addEventListener('change', (e) => handleMonthChange(e.target.value));
+        document.getElementById('fetchMonthBtn').addEventListener('click', () => syncFromGas(state.currentSheet));
+
+        // Navigation tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const tab = btn.getAttribute('data-tab');
+            state.activeTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+            ['schedule', 'calendar', 'analytics', 'sync'].forEach(v => {
+              document.getElementById('view-' + v).classList.toggle('hidden', v !== tab);
+            });
+            if (tab === 'analytics') renderAnalytics();
+          });
+        });
+
+        // Theme toggle
+        document.getElementById('themeToggleBtn').addEventListener('click', () => {
+          const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          safeSetStorage(THEME_KEY, next);
+          const icon = document.getElementById('themeIcon');
+          if (icon) icon.setAttribute('data-lucide', next === 'dark' ? 'sun' : 'moon');
+          if (state.activeTab === 'analytics') renderAnalytics();
+          if (window.lucide) window.lucide.createIcons();
+        });
+
+        // Lock mode toggle
+        document.getElementById('lockModeBtn').addEventListener('click', () => {
+          if (state.isLocked) {
+            openPinModal();
+          } else {
+            state.isLocked = true;
+            renderAll();
+            showToast('เปิดโหมดล็อกดูอย่างเดียวแล้ว', 'warning');
+          }
+        });
+
+        document.getElementById('cancelPinBtn').addEventListener('click', closePinModal);
+        document.getElementById('submitPinBtn').addEventListener('click', () => {
+          const val = document.getElementById('pinInput').value.trim();
+          if (val === state.pinCode) {
+            state.isLocked = false;
+            closePinModal();
+            renderAll();
+            showToast('ปลดล็อกโหมดแก้ไขเรียบร้อย', 'success');
+          } else {
+            document.getElementById('pinError').classList.remove('hidden');
+          }
+        });
+
+        // Filters
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+          state.search = e.target.value;
+          renderSchedule();
+          if (window.lucide) window.lucide.createIcons();
+        });
+        document.getElementById('filterSpeaker').addEventListener('change', (e) => {
+          state.filterSpeaker = e.target.value;
+          renderSchedule();
+          if (window.lucide) window.lucide.createIcons();
+        });
+        document.getElementById('filterAssignee').addEventListener('change', (e) => {
+          state.filterAssignee = e.target.value;
+          renderSchedule();
+          if (window.lucide) window.lucide.createIcons();
+        });
+        document.getElementById('filterCategory').addEventListener('change', (e) => {
+          state.filterCategory = e.target.value;
+          renderSchedule();
+          if (window.lucide) window.lucide.createIcons();
+        });
+        document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+          state.search = '';
+          state.filterSpeaker = 'all';
+          state.filterAssignee = 'all';
+          state.filterCategory = 'all';
+          document.getElementById('searchInput').value = '';
+          document.getElementById('filterSpeaker').value = 'all';
+          document.getElementById('filterAssignee').value = 'all';
+          document.getElementById('filterCategory').value = 'all';
+          renderSchedule();
+          if (window.lucide) window.lucide.createIcons();
+        });
+
+        // Edit Modal
+        document.getElementById('closeModalBtn').addEventListener('click', closeBookingModal);
+        document.getElementById('cancelModalBtn').addEventListener('click', closeBookingModal);
+
+        ['fieldFormalTeacher', 'fieldFormalStudent', 'fieldInformalTeacher', 'fieldInformalStudent', 'fieldGeneral'].forEach(id => {
+          document.getElementById(id).addEventListener('input', updateFormTotalPreview);
+        });
+
+        document.getElementById('bookingForm').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const editId = document.getElementById('editRecordId').value;
+          const record = {
+            id: editId || (state.currentSheet + '-' + Date.now()),
+            day: Math.min(31, Math.max(1, Number(document.getElementById('fieldDay').value) || 1)),
+            time: document.getElementById('fieldTime').value.trim(),
+            org: document.getElementById('fieldOrg').value.trim(),
+            province: document.getElementById('fieldProvince').value.trim(),
+            ft: Math.max(0, Number(document.getElementById('fieldFormalTeacher').value) || 0),
+            fs: Math.max(0, Number(document.getElementById('fieldFormalStudent').value) || 0),
+            it: Math.max(0, Number(document.getElementById('fieldInformalTeacher').value) || 0),
+            is: Math.max(0, Number(document.getElementById('fieldInformalStudent').value) || 0),
+            gen: Math.max(0, Number(document.getElementById('fieldGeneral').value) || 0),
+            speaker: document.getElementById('fieldSpeaker').value === 'ไม่ขอ' ? 'ไม่ขอ' : 'ขอ',
+            assignee: document.getElementById('fieldAssignee').value.trim()
+          };
+          if (!record.org) {
+            showToast('กรุณากรอกชื่อหน่วยงานหรือโรงเรียน', 'error');
+            return;
+          }
+
+          const rows = getCurrentRows();
+          if (!editId) return;
+          const idx = rows.findIndex(r => r.id === editId);
+          if (idx >= 0) {
+            record.rowNumber = rows[idx].rowNumber;
+            rows[idx] = record;
+            pushToGas('update', record);
+            showToast('อัปเดตข้อมูลคณะเข้าชมเรียบร้อย', 'success');
+          }
+          saveState();
+          closeBookingModal();
+          renderAll();
+        });
+
+        // Delegated actions (Table, Mobile Cards, Calendar)
+        document.addEventListener('click', (e) => {
+          const copyBtn = e.target.closest('[data-copy-line]');
+          if (copyBtn) {
+            const id = copyBtn.getAttribute('data-copy-line');
+            const rec = getCurrentRows().find(r => r.id === id);
+            if (rec) copyToClipboard(buildLineMessage(rec), 'คัดลอกข้อความแจ้งเตือน LINE แล้ว');
+            return;
+          }
+          const editBtn = e.target.closest('[data-edit-id]');
+          if (editBtn) {
+            const id = editBtn.getAttribute('data-edit-id');
+            const rec = getCurrentRows().find(r => r.id === id);
+            if (rec) openBookingModal(rec);
+            return;
+          }
+          const delBtn = e.target.closest('[data-delete-id]');
+          if (delBtn) {
+            openDeleteModal(delBtn.getAttribute('data-delete-id'));
+            return;
+          }
+          const calDayBtn = e.target.closest('[data-cal-day]');
+          if (calDayBtn) {
+            state.selectedDay = Number(calDayBtn.getAttribute('data-cal-day')) || 1;
+            renderCalendar();
+            if (window.lucide) window.lucide.createIcons();
+          }
+        });
+
+        // Inline Quick-Assign Staff Dropdown
+        document.addEventListener('change', (e) => {
+          const sel = e.target.closest('[data-assign-id]');
+          if (!sel) return;
+          if (!requireUnlocked()) { renderSchedule(); return; }
+          const id = sel.getAttribute('data-assign-id');
+          const rec = getCurrentRows().find(r => r.id === id);
+          if (rec) {
+            rec.assignee = sel.value;
+            saveState();
+            pushToGas('update', rec);
+            renderKPIs();
+            showToast(`มอบหมาย "${rec.assignee || 'ยังไม่ระบุ'}" ให้ ${rec.org}`, 'success');
+          }
+        });
+
+        // Delete Modal
+        document.getElementById('cancelDeleteBtn').addEventListener('click', closeDeleteModal);
+        document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+          if (!state.pendingDeleteId) return;
+          const rows = getCurrentRows();
+          const idx = rows.findIndex(r => r.id === state.pendingDeleteId);
+          if (idx >= 0) {
+            const removed = rows.splice(idx, 1)[0];
+            pushToGas('delete', removed);
+            saveState();
+            showToast(`ลบคณะ "${removed.org}" เรียบร้อยแล้ว`, 'success');
+          }
+          closeDeleteModal();
+          renderAll();
+        });
+
+        // CSV Export (UTF-8 BOM + Formula Injection Safe)
+        document.getElementById('exportCsvBtn').addEventListener('click', () => {
+          const rows = getFilteredRows();
+          const headers = ['วันที่', 'เวลา', 'หน่วยงาน', 'จังหวัด', 'ในระบบ_ครู', 'ในระบบ_นักเรียน', 'นอกระบบ_ครู', 'นอกระบบ_นักเรียน', 'ทั่วไป', 'รวม', 'วิทยากร', 'ผู้รับผิดชอบ'];
+          const lines = [headers.map(safeCsvCell).join(',')];
+          rows.forEach(r => {
+            lines.push([
+              r.day, r.time, r.org, r.province, r.ft, r.fs, r.it, r.is, r.gen, getRowTotal(r), r.speaker, r.assignee
+            ].map(safeCsvCell).join(','));
+          });
+          const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `ตารางนำชม_หว้ากอ_${state.currentSheet}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToast('ส่งออกไฟล์ CSV เรียบร้อยแล้ว', 'success');
+        });
+
+        // Copy Monthly Summary for LINE
+        document.getElementById('copySummaryLineBtn').addEventListener('click', () => {
+          const rows = getCurrentRows();
+          let ft = 0, fs = 0, it = 0, is = 0, gen = 0, req = 0;
+          rows.forEach(r => {
+            ft += Number(r.ft) || 0; fs += Number(r.fs) || 0;
+            it += Number(r.it) || 0; is += Number(r.is) || 0;
+            gen += Number(r.gen) || 0;
+            if (r.speaker === 'ขอ') req++;
+          });
+          const text = [
+            `สรุปยอดตารางนำชม พิพิธภัณฑ์สัตว์น้ำหว้ากอ (${state.currentSheet})`,
+            `จำนวนคณะทั้งหมด: ${formatNum(rows.length)} คณะ (ขอวิทยากร ${formatNum(req)} คณะ)`,
+            `- ในระบบ: ครู ${formatNum(ft)} / นักเรียน ${formatNum(fs)} คน`,
+            `- นอกระบบ: ครู ${formatNum(it)} / นักเรียน ${formatNum(is)} คน`,
+            `- ทั่วไป: ${formatNum(gen)} คน`,
+            `รวมผู้เข้าชมทั้งสิ้น: ${formatNum(ft + fs + it + is + gen)} คน`
+          ].join('\n');
+          copyToClipboard(text, 'คัดลอกสรุปยอดส่ง LINE เรียบร้อยแล้ว');
+        });
+
+        // Sync & Setup Tab
+        document.getElementById('gasCodePreview').textContent = GAS_CODE_TEMPLATE;
+        document.getElementById('gasUrlInput').value = state.gasUrl;
+
+        document.getElementById('copyGasCodeBtn').addEventListener('click', () => {
+          copyToClipboard(GAS_CODE_TEMPLATE, 'คัดลอกโค้ด Code.gs เรียบร้อยแล้ว');
+        });
+
+        document.getElementById('saveGasUrlBtn').addEventListener('click', () => {
+          const val = document.getElementById('gasUrlInput').value.trim();
+          const errEl = document.getElementById('gasUrlError');
+          if (val && !isValidGasUrl(val)) {
+            errEl.textContent = 'URL ไม่ถูกต้อง ต้องเป็นลิงก์ https://script.google.com/macros/s/.../exec เท่านั้น';
+            errEl.classList.remove('hidden');
+            return;
+          }
+          errEl.classList.add('hidden');
+          state.gasUrl = val;
+          safeSetStorage(GAS_URL_KEY, val);
+          showToast(val ? 'บันทึก Apps Script URL แล้ว' : 'ล้างการเชื่อมต่อ URL แล้ว', 'success');
+        });
+
+        document.getElementById('syncNowBtn').addEventListener('click', syncFromGas);
+
+        document.getElementById('exportJsonBtn').addEventListener('click', () => {
+          const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'waghor-tour-schedule-backup.json';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToast('ดาวน์โหลดไฟล์สำรอง JSON แล้ว', 'success');
+        });
+
+        document.getElementById('importJsonInput').addEventListener('change', (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const parsed = JSON.parse(String(reader.result));
+              if (!parsed || typeof parsed !== 'object') throw new Error('รูปแบบไฟล์ไม่ถูกต้อง');
+              state.data = parsed;
+              SHEET_TABS.forEach(t => { if (!Array.isArray(state.data[t])) state.data[t] = []; });
+              saveState();
+              renderAll();
+              showToast('นำเข้าข้อมูล JSON สำเร็จ', 'success');
+            } catch (_) {
+              showToast('ไฟล์ JSON ไม่ถูกต้อง', 'error');
+            }
+          };
+          reader.readAsText(file);
+          e.target.value = '';
+        });
+
+        document.getElementById('resetDemoDataBtn').addEventListener('click', () => {
+          if (!requireUnlocked()) return;
+          state.data = cloneInitialData();
+          saveState();
+          renderAll();
+          showToast('รีเซ็ตเป็นข้อมูลตั้งต้นจากชีต ตารางนำชม_หว้ากอ แล้ว', 'success');
+        });
+
+        // Keyboard Shortcuts (/ to search, Esc to close modals)
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            closeBookingModal();
+            closeDeleteModal();
+            closePinModal();
+          } else if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+            document.getElementById('searchInput').focus();
+          }
+        });
+      }
+
+      // Initialize App
+      loadState();
+      bindEvents();
+      renderAll();
+    })();
+  </script>
+</body>
+</html>
