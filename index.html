@@ -3025,8 +3025,18 @@ function tourJsonResponse(obj) {
       // 2. STATE & STORAGE (vibesec-skill safe wrappers)
       // ============================================================
       const STORAGE_KEY = 'waghor_tour_schedule_v2';
+      const LAST_SHEET_KEY = 'waghor_tour_last_sheet_v1';
       const GAS_URL_KEY = 'waghor_tour_gas_url_v1';
       const THEME_KEY = 'waghor_tour_theme_v1';
+
+      function getCurrentMonthSheet() {
+        const now = new Date();
+        const beYear2 = String((now.getFullYear() + 543) % 100);
+        const monthPrefixes = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        const targetNorm = (monthPrefixes[now.getMonth()] + beYear2).replace(/\s+/g, '').replace('มิ.ย.', 'มิย.');
+        const match = SHEET_TABS.find(t => t.replace(/\s+/g, '') === targetNorm);
+        return match || 'พ.ย.69';
+      }
 
       const state = {
         data: {},
@@ -3075,6 +3085,13 @@ function tourJsonResponse(obj) {
 
         const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzWbrlJJAv1pyYI-Xw8VtP2ZZFFeJL-9trF25f3UscIbgkpHM_iLR6gPSZiIgrT-AliJw/exec';
         state.gasUrl = safeGetStorage(GAS_URL_KEY) || DEFAULT_GAS_URL;
+        const lastSheet = safeGetStorage(LAST_SHEET_KEY);
+        if (lastSheet && SHEET_TABS.includes(lastSheet)) {
+          state.currentSheet = lastSheet;
+        } else {
+          state.currentSheet = getCurrentMonthSheet();
+        }
+
         const savedTheme = safeGetStorage(THEME_KEY);
         if (savedTheme === 'dark' || savedTheme === 'light') {
           document.documentElement.setAttribute('data-theme', savedTheme);
@@ -3713,6 +3730,7 @@ function tourJsonResponse(obj) {
 
         function handleMonthChange(nextSheet) {
           state.currentSheet = nextSheet;
+          safeSetStorage(LAST_SHEET_KEY, nextSheet);
           sheetSel.value = nextSheet;
           schedMonthSel.value = nextSheet;
           renderAll();
