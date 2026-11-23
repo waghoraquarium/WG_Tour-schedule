@@ -3070,7 +3070,8 @@ function tourJsonResponse(obj) {
           if (!Array.isArray(state.data[tab])) state.data[tab] = [];
         });
 
-        state.gasUrl = safeGetStorage(GAS_URL_KEY) || '';
+        const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzWbrlJJAv1pyYI-Xw8VtP2ZZFFeJL-9trF25f3UscIbgkpHM_iLR6gPSZiIgrT-AliJw/exec';
+        state.gasUrl = safeGetStorage(GAS_URL_KEY) || DEFAULT_GAS_URL;
         const savedTheme = safeGetStorage(THEME_KEY);
         if (savedTheme === 'dark' || savedTheme === 'light') {
           document.documentElement.setAttribute('data-theme', savedTheme);
