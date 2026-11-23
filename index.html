@@ -2789,6 +2789,20 @@
             "gen": 0,
             "speaker": "ขอ",
             "assignee": ""
+          },
+          {
+            "id": "พ.ย.69-33",
+            "day": 27,
+            "time": "13.00 - 14.00 น.",
+            "org": "โรงเรียนเขาย้อยวิทยา",
+            "province": "เพชรบุรี",
+            "ft": 10,
+            "fs": 179,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
           }
         ],
         "ธ.ค.69": [
@@ -2835,6 +2849,20 @@
             "assignee": ""
           },
           {
+            "id": "ธ.ค.69-15",
+            "day": 9,
+            "time": "09.00 - 15.30 น.",
+            "org": "โรงเรียนบ้านในห้วย",
+            "province": "ชุมพร",
+            "ft": 9,
+            "fs": 48,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
             "id": "ธ.ค.69-17",
             "day": 11,
             "time": "9.00-11.30",
@@ -2849,7 +2877,63 @@
             "assignee": ""
           },
           {
-            "id": "ธ.ค.69-33",
+            "id": "ธ.ค.69-18",
+            "day": 11,
+            "time": "08.30 - 11.30 น.",
+            "org": "โรงเรียนท่าแชนะรัชดาภิเษก",
+            "province": "ชุมพร",
+            "ft": 11,
+            "fs": 128,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ธ.ค.69-21",
+            "day": 14,
+            "time": "09.30 น.",
+            "org": "ศูนย์ส่งเสริมการเรียนรู้ระดับอำเภอเมืองเพชรบุรี",
+            "province": "เพชรบุรี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ธ.ค.69-22",
+            "day": 14,
+            "time": "11.00 - 14.00 น.",
+            "org": "เครือข่ายส่งเสริมประสิทธิภาพการจัดการมัธยมศึกษาจังหวัดประจวบคีรีขันธ์ โรงเรียนประจวบวิทยาลัย",
+            "province": "จังหวัดประจวบคีรีขันธ์",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ธ.ค.69-23",
+            "day": 14,
+            "time": "11.00 - 14.00 น.",
+            "org": "โรงเรียนประจวบวิทยาลัย",
+            "province": "ประจวบคีรีขันธ์",
+            "ft": 0,
+            "fs": 30,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ธ.ค.69-35",
             "day": 26,
             "time": "10.00-14.15",
             "org": "ร.ร.เรยีนาเชลีวิทยาลัย",
@@ -2863,7 +2947,7 @@
             "assignee": ""
           },
           {
-            "id": "ธ.ค.69-34",
+            "id": "ธ.ค.69-36",
             "day": 26,
             "time": "13.30-15.30",
             "org": "ร.ร.โยธินบูรณะ",
@@ -2878,6 +2962,20 @@
           }
         ],
         "ม.ค.70": [
+          {
+            "id": "ม.ค.70-11",
+            "day": 7,
+            "time": "09.00 - 12.00 น.",
+            "org": "โรงเรียนสุราษฎร์พิทยา",
+            "province": "สุราษฎร์ธานี",
+            "ft": 2,
+            "fs": 30,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
           {
             "id": "ม.ค.70-25",
             "day": 19,
@@ -3027,7 +3125,7 @@ function tourJsonResponse(obj) {
       // ============================================================
       // 2. STATE & STORAGE (vibesec-skill safe wrappers)
       // ============================================================
-      const STORAGE_KEY = 'waghor_tour_schedule_v2';
+      const STORAGE_KEY = 'waghor_tour_schedule_v3';
       const LAST_SHEET_KEY = 'waghor_tour_last_sheet_v1';
       const GAS_URL_KEY = 'waghor_tour_gas_url_v1';
       const THEME_KEY = 'waghor_tour_theme_v1';
@@ -3673,32 +3771,59 @@ function tourJsonResponse(obj) {
       // ============================================================
       // 9. LIVE SYNC WITH GOOGLE APPS SCRIPT (Optional)
       // ============================================================
-      async function syncFromGas(targetSheet) {
+      let activeSyncSeq = 0;
+
+      function formatSyncClock() {
+        const now = new Date();
+        return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ' น.';
+      }
+
+      async function syncFromGas(targetSheet, opts) {
+        const silent = Boolean(opts && opts.silent);
         const sheetToFetch = typeof targetSheet === 'string' && targetSheet ? targetSheet : state.currentSheet;
         const url = state.gasUrl.trim();
         if (!url || !isValidGasUrl(url)) {
-          showToast('กรุณาตั้งค่า Apps Script URL ในแท็บ "เชื่อมชีต & Apps Script" ก่อนดึงข้อมูลสด', 'warning');
-          const syncTabBtn = document.querySelector('.tab-btn[data-tab="sync"]');
-          if (syncTabBtn) syncTabBtn.click();
+          if (!silent) {
+            showToast('กรุณาตั้งค่า Apps Script URL ในแท็บ "เชื่อมชีต & Apps Script" ก่อนดึงข้อมูลสด', 'warning');
+            const syncTabBtn = document.querySelector('.tab-btn[data-tab="sync"]');
+            if (syncTabBtn) syncTabBtn.click();
+          }
           return;
         }
+        const seq = ++activeSyncSeq;
         const statusText = document.getElementById('syncStatusText');
+        const statusDot = document.getElementById('syncStatusDot');
         const fetchBtn = document.getElementById('fetchMonthBtn');
-        statusText.textContent = `กำลังดึงข้อมูลเดือน ${SHEET_LABELS[sheetToFetch] || sheetToFetch}...`;
+        statusText.textContent = `กำลังซิงค์เดือน ${SHEET_LABELS[sheetToFetch] || sheetToFetch}...`;
+        if (statusDot) statusDot.className = 'inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse';
         if (fetchBtn) fetchBtn.disabled = true;
         try {
-          const res = await fetch(`${url}?sheet=${encodeURIComponent(sheetToFetch)}`);
+          const res = await fetch(`${url}?sheet=${encodeURIComponent(sheetToFetch)}&_t=${Date.now()}`, { cache: 'no-store' });
           if (!res.ok) throw new Error('HTTP ' + res.status);
-          const json = await res.json();
+          const rawText = await res.text();
+          let json;
+          try {
+            json = JSON.parse(rawText);
+          } catch (_) {
+            throw new Error('สคริปต์ไม่ตอบกลับเป็น JSON (กรุณาตรวจ Deploy > New version และสิทธิ์ Anyone)');
+          }
           if (!json.ok) throw new Error(json.error || 'เกิดข้อผิดพลาดจากสคริปต์');
+          if (seq !== activeSyncSeq) return;
           state.data[sheetToFetch] = Array.isArray(json.rows) ? json.rows : [];
           saveState();
           renderAll();
-          statusText.textContent = `ซิงค์เดือน ${sheetToFetch} สำเร็จ (${state.data[sheetToFetch].length} คณะ)`;
-          showToast(`ดึงข้อมูลเดือน ${SHEET_LABELS[sheetToFetch] || sheetToFetch} เรียบร้อย (${state.data[sheetToFetch].length} คณะ)`, 'success');
+          if (statusDot) statusDot.className = 'inline-block w-2 h-2 rounded-full bg-emerald-500';
+          statusText.textContent = `ซิงค์ล่าสุด ${formatSyncClock()} (${sheetToFetch} · ${state.data[sheetToFetch].length} คณะ)`;
+          if (!silent) {
+            showToast(`ดึงข้อมูลเดือน ${SHEET_LABELS[sheetToFetch] || sheetToFetch} เรียบร้อย (${state.data[sheetToFetch].length} คณะ)`, 'success');
+          }
         } catch (err) {
-          statusText.textContent = 'โหมดออฟไลน์ / ข้อมูลในเครื่อง';
-          showToast('เชื่อมต่อชีตไม่สำเร็จ: ' + err.message, 'error');
+          if (seq !== activeSyncSeq) return;
+          if (statusDot) statusDot.className = 'inline-block w-2 h-2 rounded-full bg-slate-400';
+          statusText.textContent = 'ข้อมูลในเครื่อง (กด "ดึงข้อมูลเฉพาะเดือนนี้" เพื่อลองซิงค์ใหม่)';
+          if (!silent) {
+            showToast('เชื่อมต่อชีตไม่สำเร็จ: ' + err.message, 'error');
+          }
         } finally {
           if (fetchBtn) fetchBtn.disabled = false;
         }
@@ -3737,6 +3862,7 @@ function tourJsonResponse(obj) {
           sheetSel.value = nextSheet;
           schedMonthSel.value = nextSheet;
           renderAll();
+          syncFromGas(nextSheet, { silent: true });
         }
 
         sheetSel.addEventListener('change', (e) => handleMonthChange(e.target.value));
@@ -4056,6 +4182,7 @@ function tourJsonResponse(obj) {
       loadState();
       bindEvents();
       renderAll();
+      syncFromGas(state.currentSheet, { silent: true });
     })();
   </script>
 </body>
