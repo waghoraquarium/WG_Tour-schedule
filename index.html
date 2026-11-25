@@ -3066,7 +3066,7 @@ const TOUR_SPREADSHEET_ID = '14ADP9vp_OcTGnNszw8bNUptOQ6w1_EwaZMprUguqLYA';
 
 function doGet(e) {
   try {
-    const ss = SpreadsheetApp.openById(TOUR_SPREADSHEET_ID);
+    const ss = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(TOUR_SPREADSHEET_ID);
     const sheetName = (e && e.parameter && e.parameter.sheet) ? e.parameter.sheet : 'พ.ย.69';
     let sheet = ss.getSheetByName(sheetName);
     if (!sheet) {
@@ -3135,7 +3135,7 @@ function doGet(e) {
 
 function handleTourWebPost(body) {
   try {
-    const ss = SpreadsheetApp.openById(TOUR_SPREADSHEET_ID);
+    const ss = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(TOUR_SPREADSHEET_ID);
     const sheet = ss.getSheetByName(body.sheet);
     if (!sheet) return tourJsonResponse({ ok: false, error: 'ไม่พบแท็บชีต: ' + body.sheet });
 
@@ -4025,15 +4025,24 @@ function tourJsonResponse(obj) {
 
       async function pushToGas(action, record) {
         const url = state.gasUrl.trim();
-        if (!url || !isValidGasUrl(url)) return;
+        if (!url || !isValidGasUrl(url)) return false;
         try {
-          await fetch(url, {
+          const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ app: 'waghor_tour_web', action, sheet: state.currentSheet, record })
           });
-        } catch (_) {
-          // Non-blocking fallback: local state already updated
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const text = await res.text();
+          let json;
+          try { json = JSON.parse(text); } catch (_) { json = null; }
+          if (json && json.ok === false) {
+            throw new Error(json.error || 'Apps Script ปฏิเสธการบันทึก');
+          }
+          return true;
+        } catch (err) {
+          showToast('บันทึกในเครื่องแล้ว แต่บันทึกลง Google Sheets ไม่สำเร็จ: ' + err.message, 'error');
+          return false;
         }
       }
 
