@@ -390,7 +390,7 @@
         <div class="glass-card rounded-2xl p-3.5 sm:p-4 flex flex-col lg:flex-row gap-3">
           <div class="relative flex-1 min-w-0">
             <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style="color: var(--ink-muted);"></i>
-            <input id="searchInput" name="waghor_tour_search_q" type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="" placeholder="ค้นหาชื่อโรงเรียน, หน่วยงาน, จังหวัด หรือวิทยากร... (กด /)" class="input-surface w-full rounded-xl pl-10 pr-4 text-sm" />
+            <input id="searchInput" name="waghor_q_filter" type="text" inputmode="search" readonly autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" value="" placeholder="ค้นหาชื่อโรงเรียน, หน่วยงาน, จังหวัด หรือวิทยากร... (กด /)" class="input-surface w-full rounded-xl pl-10 pr-4 text-sm" />
           </div>
 
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 lg:w-auto">
@@ -774,7 +774,7 @@
         <h3 id="pinModalTitle" class="text-base font-bold">ปลดล็อกโหมดแก้ไข</h3>
         <p id="pinModalSubtitle" class="text-xs mt-1" style="color: var(--ink-muted);">กรอกรหัส PIN 4 หลัก (ค่าเริ่มต้น: 1234)</p>
       </div>
-      <input id="pinInput" type="password" inputmode="numeric" maxlength="8" class="input-surface w-full rounded-xl px-4 text-center text-lg tracking-widest font-mono-num" placeholder="••••" />
+      <input id="pinInput" name="waghor_pin_unlock" type="password" inputmode="numeric" autocomplete="new-password" data-lpignore="true" maxlength="8" class="input-surface w-full rounded-xl px-4 text-center text-lg tracking-widest font-mono-num" placeholder="••••" />
       <p id="pinError" class="hidden text-xs font-medium" style="color: var(--rose-600);">รหัส PIN ไม่ถูกต้อง</p>
       <div class="flex justify-end gap-2">
         <button id="cancelPinBtn" type="button" class="btn-press px-4 rounded-xl border text-sm font-medium" style="background: var(--surface-2); border-color: var(--border); color: var(--ink-secondary);">ยกเลิก</button>
@@ -4106,8 +4106,16 @@ function tourJsonResponse(obj) {
           }
         });
 
-        // Filters
-        document.getElementById('searchInput').addEventListener('input', (e) => {
+        // Filters (unlock readonly on user interaction to block Chrome autofill)
+        const searchEl = document.getElementById('searchInput');
+        const unlockSearch = () => {
+          if (searchEl.hasAttribute('readonly')) {
+            searchEl.removeAttribute('readonly');
+          }
+        };
+        searchEl.addEventListener('pointerdown', unlockSearch);
+        searchEl.addEventListener('focus', unlockSearch);
+        searchEl.addEventListener('input', (e) => {
           state.search = e.target.value;
           renderSchedule();
           if (window.lucide) window.lucide.createIcons();
@@ -4364,7 +4372,9 @@ function tourJsonResponse(obj) {
             closePinModal();
           } else if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
             e.preventDefault();
-            document.getElementById('searchInput').focus();
+            const siFocus = document.getElementById('searchInput');
+            siFocus.removeAttribute('readonly');
+            siFocus.focus();
           }
         });
       }
@@ -4382,13 +4392,15 @@ function tourJsonResponse(obj) {
       bindEvents();
       clearSearchAutofill();
       renderAll();
-      setTimeout(() => {
-        const si = document.getElementById('searchInput');
-        if (si && si.value && si.value.includes('script.google.com')) {
-          clearSearchAutofill();
-          renderSchedule();
-        }
-      }, 120);
+      [80, 300, 800].forEach(ms => {
+        setTimeout(() => {
+          const si = document.getElementById('searchInput');
+          if (si && si.hasAttribute('readonly') && si.value) {
+            clearSearchAutofill();
+            renderSchedule();
+          }
+        }, ms);
+      });
       window.addEventListener('pageshow', () => {
         clearSearchAutofill();
         renderSchedule();
