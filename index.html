@@ -735,12 +735,8 @@
             </select>
           </div>
           <div>
-            <label for="fieldAssignee" class="block text-xs font-semibold mb-1" style="color: var(--ink-secondary);">ผู้รับผิดชอบ / วิทยากร</label>
-            <input id="fieldAssignee" type="text" class="input-surface w-full rounded-xl px-3 text-sm" placeholder="เช่น นราธิป, ณัฐพล" list="staffSuggestions" />
-            <datalist id="staffSuggestions">
-              <option value="นราธิป"></option>
-              <option value="ณัฐพล"></option>
-            </datalist>
+            <label for="fieldAssignee" class="block text-xs font-semibold mb-1" style="color: var(--ink-secondary);">ผู้รับผิดชอบ / วิทยากร (ดึงจากแท็บ เจ้าหน้าที่)</label>
+            <select id="fieldAssignee" class="input-surface w-full rounded-xl px-3 text-sm font-medium cursor-pointer"></select>
           </div>
         </div>
 
@@ -800,6 +796,61 @@
       const SHEET_TABS = [
         '2/69', 'มิย.69', 'ก.ค.69', 'ส .ค.69', 'ก.ย.69',
         'ต.ค.69', 'พ.ย.69', 'ธ.ค.69', 'ม.ค.70', 'ก.พ.70', 'มี.ค.70'
+      ];
+
+      const DEFAULT_STAFF_ROSTER = [
+        {
+          "name": "นางสาวลัคนา ชำนาญกุล",
+          "role": "ครู"
+        },
+        {
+          "name": "นายนราธิป ลีธีระ",
+          "role": "นักวิชาการศึกษา"
+        },
+        {
+          "name": "นางวันเพ็ญ ผ่องแผ้ว",
+          "role": "นักวิชาการประมง"
+        },
+        {
+          "name": "นางณัฐพัชร จันทร์ดี",
+          "role": "นักวิชาการศึกษา"
+        },
+        {
+          "name": "นางสาวบุษยา เครือแตง",
+          "role": "นักวิชาการประมง"
+        },
+        {
+          "name": "นางสาวบารณี บำรุง",
+          "role": "นักวิชาการประมง"
+        },
+        {
+          "name": "นายเตชินท์ สว่างแวว",
+          "role": "นักวิชาการประมง"
+        },
+        {
+          "name": "นายณัฏฐ์ ดีหริ่ง",
+          "role": "นักวิชาการศึกษา"
+        },
+        {
+          "name": "นายณัฐพล ร่มแก้ว",
+          "role": "นักวิชาการศึกษา"
+        },
+        {
+          "name": "นายพงษ์ศักดิ์ สินทวี",
+          "role": "นักวิชาการศึกษา"
+        },
+        {
+          "name": "นางสาวอภิรดี ปานนิล",
+          "role": "นักวิชาการศึกษา"
+        },
+        {
+          "name": "นายยุทธพงษ์ พรหมน้อย",
+          "role": "นักวิชาการศึกษา"
+        },
+        {
+          "name": "นางสาวกนิษฐา ลีธีระ",
+          "role": "นักวิชาการศึกษา"
+        }
       ];
 
       const SHEET_LABELS = {
@@ -2789,6 +2840,20 @@
             "gen": 0,
             "speaker": "ขอ",
             "assignee": ""
+          },
+          {
+            "id": "พ.ย.69-33",
+            "day": 27,
+            "time": "13.00 - 14.00 น.",
+            "org": "โรงเรียนเขาย้อยวิทยา",
+            "province": "เพชรบุรี",
+            "ft": 10,
+            "fs": 179,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
           }
         ],
         "ธ.ค.69": [
@@ -2835,6 +2900,20 @@
             "assignee": ""
           },
           {
+            "id": "ธ.ค.69-15",
+            "day": 9,
+            "time": "09.00 - 15.30 น.",
+            "org": "โรงเรียนบ้านในห้วย",
+            "province": "ชุมพร",
+            "ft": 9,
+            "fs": 48,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
             "id": "ธ.ค.69-17",
             "day": 11,
             "time": "9.00-11.30",
@@ -2849,7 +2928,63 @@
             "assignee": ""
           },
           {
-            "id": "ธ.ค.69-33",
+            "id": "ธ.ค.69-18",
+            "day": 11,
+            "time": "08.30 - 11.30 น.",
+            "org": "โรงเรียนท่าแชนะรัชดาภิเษก",
+            "province": "ชุมพร",
+            "ft": 11,
+            "fs": 128,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ธ.ค.69-21",
+            "day": 14,
+            "time": "09.30 น.",
+            "org": "ศูนย์ส่งเสริมการเรียนรู้ระดับอำเภอเมืองเพชรบุรี",
+            "province": "เพชรบุรี",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ธ.ค.69-22",
+            "day": 14,
+            "time": "11.00 - 14.00 น.",
+            "org": "เครือข่ายส่งเสริมประสิทธิภาพการจัดการมัธยมศึกษาจังหวัดประจวบคีรีขันธ์ โรงเรียนประจวบวิทยาลัย",
+            "province": "จังหวัดประจวบคีรีขันธ์",
+            "ft": 0,
+            "fs": 0,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ไม่ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ธ.ค.69-23",
+            "day": 14,
+            "time": "11.00 - 14.00 น.",
+            "org": "โรงเรียนประจวบวิทยาลัย",
+            "province": "ประจวบคีรีขันธ์",
+            "ft": 0,
+            "fs": 30,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
+          {
+            "id": "ธ.ค.69-35",
             "day": 26,
             "time": "10.00-14.15",
             "org": "ร.ร.เรยีนาเชลีวิทยาลัย",
@@ -2863,7 +2998,7 @@
             "assignee": ""
           },
           {
-            "id": "ธ.ค.69-34",
+            "id": "ธ.ค.69-36",
             "day": 26,
             "time": "13.30-15.30",
             "org": "ร.ร.โยธินบูรณะ",
@@ -2878,6 +3013,20 @@
           }
         ],
         "ม.ค.70": [
+          {
+            "id": "ม.ค.70-11",
+            "day": 7,
+            "time": "09.00 - 12.00 น.",
+            "org": "โรงเรียนสุราษฎร์พิทยา",
+            "province": "สุราษฎร์ธานี",
+            "ft": 2,
+            "fs": 30,
+            "it": 0,
+            "is": 0,
+            "gen": 0,
+            "speaker": "ขอ",
+            "assignee": ""
+          },
           {
             "id": "ม.ค.70-25",
             "day": 19,
@@ -2925,7 +3074,7 @@ function doGet(e) {
     const rows = [];
 
     if (sheet.getName().trim() === '2/69') {
-      if (lastRow < 11) return tourJsonResponse({ ok: true, sheet: sheetName, rows: [] });
+      if (lastRow < 11) return tourJsonResponse({ ok: true, sheet: sheetName, rows: [], staff: readStaffRoster_(ss) });
       const values = sheet.getRange(11, 6, lastRow - 10, 9).getValues();
       values.forEach((r, idx) => {
         const org = String(r[1] || '').trim();
@@ -2947,7 +3096,7 @@ function doGet(e) {
         });
       });
     } else {
-      if (lastRow < 4) return tourJsonResponse({ ok: true, sheet: sheetName, rows: [] });
+      if (lastRow < 4) return tourJsonResponse({ ok: true, sheet: sheetName, rows: [], staff: readStaffRoster_(ss) });
       const values = sheet.getRange(4, 1, lastRow - 3, 11).getValues();
       let lastDay = 1;
       values.forEach((r, idx) => {
@@ -2972,7 +3121,8 @@ function doGet(e) {
         });
       });
     }
-    return tourJsonResponse({ ok: true, sheet: sheetName, rows: rows });
+    const staff = readStaffRoster_(ss);
+    return tourJsonResponse({ ok: true, sheet: sheetName, rows: rows, staff: staff });
   } catch (err) {
     return tourJsonResponse({ ok: false, error: err.message });
   }
@@ -3014,6 +3164,22 @@ function handleTourWebPost(body) {
   }
 }
 
+function readStaffRoster_(ss) {
+  const staffSheet = ss.getSheetByName('เจ้าหน้าที่');
+  if (!staffSheet || staffSheet.getLastRow() < 2) return [];
+  const vals = staffSheet.getRange(2, 1, staffSheet.getLastRow() - 1, 4).getValues();
+  const list = [];
+  vals.forEach(r => {
+    const name = String(r[1] || '').trim();
+    const role = String(r[2] || '').trim();
+    const status = String(r[3] || '').trim();
+    if (name && (!status || status.indexOf('ไม่') === -1)) {
+      list.push({ name: name, role: role });
+    }
+  });
+  return list;
+}
+
 function tourSanitizeCell(val) {
   const s = String(val || '').trim();
   return /^[=+\\-@]/.test(s) ? "'" + s : s;
@@ -3027,7 +3193,9 @@ function tourJsonResponse(obj) {
       // ============================================================
       // 2. STATE & STORAGE (vibesec-skill safe wrappers)
       // ============================================================
-      const STORAGE_KEY = 'waghor_tour_schedule_v2';
+      const STORAGE_KEY = 'waghor_tour_schedule_v3';
+      const STAFF_ROSTER_KEY = 'waghor_tour_staff_roster_v1';
+      const STAFF_USAGE_KEY = 'waghor_tour_staff_usage_v1';
       const LAST_SHEET_KEY = 'waghor_tour_last_sheet_v1';
       const GAS_URL_KEY = 'waghor_tour_gas_url_v1';
       const THEME_KEY = 'waghor_tour_theme_v1';
@@ -3043,6 +3211,8 @@ function tourJsonResponse(obj) {
 
       const state = {
         data: {},
+        staffRoster: [],
+        staffUsage: {},
         currentSheet: '2/69',
         activeTab: 'schedule',
         search: '',
@@ -3085,6 +3255,19 @@ function tourJsonResponse(obj) {
         SHEET_TABS.forEach(tab => {
           if (!Array.isArray(state.data[tab])) state.data[tab] = [];
         });
+
+        try {
+          const sr = JSON.parse(safeGetStorage(STAFF_ROSTER_KEY) || 'null');
+          state.staffRoster = Array.isArray(sr) && sr.length ? sr : JSON.parse(JSON.stringify(DEFAULT_STAFF_ROSTER));
+        } catch (_) {
+          state.staffRoster = JSON.parse(JSON.stringify(DEFAULT_STAFF_ROSTER));
+        }
+        try {
+          const su = JSON.parse(safeGetStorage(STAFF_USAGE_KEY) || '{}');
+          state.staffUsage = (su && typeof su === 'object') ? su : {};
+        } catch (_) {
+          state.staffUsage = {};
+        }
 
         const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzWbrlJJAv1pyYI-Xw8VtP2ZZFFeJL-9trF25f3UscIbgkpHM_iLR6gPSZiIgrT-AliJw/exec';
         state.gasUrl = safeGetStorage(GAS_URL_KEY) || DEFAULT_GAS_URL;
@@ -3194,7 +3377,9 @@ function tourJsonResponse(obj) {
           if (state.filterAssignee === 'unassigned') {
             if (r.assignee && r.assignee.trim() !== '') return false;
           } else if (state.filterAssignee !== 'all') {
-            if (r.assignee !== state.filterAssignee) return false;
+            const fa = state.filterAssignee;
+            const ra = String(r.assignee || '').trim();
+            if (!(ra === fa || (ra && (fa.includes(ra) || ra.includes(fa))))) return false;
           }
           if (state.filterCategory === 'formal' && ((r.ft || 0) + (r.fs || 0) === 0)) return false;
           if (state.filterCategory === 'informal' && ((r.it || 0) + (r.is || 0) === 0)) return false;
@@ -3203,12 +3388,108 @@ function tourJsonResponse(obj) {
         }).sort((a, b) => (a.day - b.day) || String(a.time).localeCompare(String(b.time)));
       }
 
-      function getUniqueStaffList() {
-        const set = new Set(['นราธิป', 'ณัฐพล']);
-        getCurrentRows().forEach(r => {
-          if (r.assignee && r.assignee.trim()) set.add(r.assignee.trim());
+      function recordStaffUsage(name) {
+        const n = String(name || '').trim();
+        if (!n) return;
+        state.staffUsage[n] = (Number(state.staffUsage[n]) || 0) + 1;
+        safeSetStorage(STAFF_USAGE_KEY, JSON.stringify(state.staffUsage));
+      }
+
+      function getRankedStaff() {
+        // Compute assignment counts across all tabs + local usage
+        const counts = {};
+        Object.values(state.data).forEach(rows => {
+          if (!Array.isArray(rows)) return;
+          rows.forEach(r => {
+            const a = String(r.assignee || '').trim();
+            if (a) counts[a] = (counts[a] || 0) + 1;
+          });
         });
-        return Array.from(set);
+
+        const rosterNames = state.staffRoster.map(s => s.name);
+        const scoreFor = (fullName) => {
+          let score = Number(state.staffUsage[fullName]) || 0;
+          Object.entries(counts).forEach(([k, v]) => {
+            if (k === fullName || fullName.includes(k) || k.includes(fullName)) {
+              score += v;
+            }
+          });
+          return score;
+        };
+
+        const frequent = [];
+        const others = [];
+        const rankedRoster = rosterNames.map(name => ({ name, score: scoreFor(name) }));
+        rankedRoster.sort((a, b) => b.score - a.score);
+
+        rankedRoster.forEach((item, idx) => {
+          if (item.score > 0 && idx < 5) {
+            frequent.push(item);
+          } else {
+            others.push(item);
+          }
+        });
+
+        // Include any short/legacy names present in current sheet that aren't exact matches in roster
+        const extras = [];
+        const seen = new Set(rosterNames);
+        getCurrentRows().forEach(r => {
+          const a = String(r.assignee || '').trim();
+          if (a && !seen.has(a)) {
+            seen.add(a);
+            extras.push({ name: a, score: counts[a] || 0 });
+          }
+        });
+
+        return { frequent, others, extras };
+      }
+
+      function buildStaffOptionsHtml(selectedVal) {
+        const { frequent, others, extras } = getRankedStaff();
+        const sel = String(selectedVal || '').trim();
+        let htmlOpts = `<option value="">— ยังไม่ระบุ —</option>`;
+
+        if (frequent.length) {
+          htmlOpts += `<optgroup label="⭐ เรียกบ่อย (แนะนำ)">` +
+            frequent.map(x => `<option value="${escapeHtml(x.name)}" ${sel === x.name ? 'selected' : ''}>${escapeHtml(x.name)} (${x.score})</option>`).join('') +
+            `</optgroup>`;
+        }
+        if (others.length) {
+          htmlOpts += `<optgroup label="รายชื่อเจ้าหน้าที่ทั้งหมด">` +
+            others.map(x => `<option value="${escapeHtml(x.name)}" ${sel === x.name ? 'selected' : ''}>${escapeHtml(x.name)}</option>`).join('') +
+            `</optgroup>`;
+        }
+        if (extras.length) {
+          htmlOpts += `<optgroup label="ชื่อเดิมในชีต">` +
+            extras.map(x => `<option value="${escapeHtml(x.name)}" ${sel === x.name ? 'selected' : ''}>${escapeHtml(x.name)}</option>`).join('') +
+            `</optgroup>`;
+        }
+        return htmlOpts;
+      }
+
+      function populateAssigneeFilter() {
+        const filterSel = document.getElementById('filterAssignee');
+        if (!filterSel) return;
+        const prev = state.filterAssignee;
+        const { frequent, others, extras } = getRankedStaff();
+        let opts = `<option value="all">ผู้รับผิดชอบ: ทั้งหมด</option>`;
+        opts += `<option value="unassigned" ${prev === 'unassigned' ? 'selected' : ''}>ยังไม่มอบหมาย</option>`;
+        if (frequent.length) {
+          opts += `<optgroup label="⭐ เรียกบ่อย">` +
+            frequent.map(x => `<option value="${escapeHtml(x.name)}" ${prev === x.name ? 'selected' : ''}>${escapeHtml(x.name)}</option>`).join('') +
+            `</optgroup>`;
+        }
+        if (others.length) {
+          opts += `<optgroup label="เจ้าหน้าที่ทั้งหมด">` +
+            others.map(x => `<option value="${escapeHtml(x.name)}" ${prev === x.name ? 'selected' : ''}>${escapeHtml(x.name)}</option>`).join('') +
+            `</optgroup>`;
+        }
+        if (extras.length) {
+          opts += `<optgroup label="ชื่อเดิมในชีต">` +
+            extras.map(x => `<option value="${escapeHtml(x.name)}" ${prev === x.name ? 'selected' : ''}>${escapeHtml(x.name)}</option>`).join('') +
+            `</optgroup>`;
+        }
+        filterSel.innerHTML = opts;
       }
 
       function buildLineMessage(r) {
@@ -3280,7 +3561,7 @@ function tourJsonResponse(obj) {
 
       function renderSchedule() {
         const filtered = getFilteredRows();
-        const staffList = getUniqueStaffList();
+        populateAssigneeFilter();
         const tbody = document.getElementById('scheduleTableBody');
         const emptyState = document.getElementById('emptyTableState');
         const mobileList = document.getElementById('mobileCardList');
@@ -3307,9 +3588,7 @@ function tourJsonResponse(obj) {
             ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="background: var(--orange-soft); color: var(--orange-600);"><span class="w-1.5 h-1.5 rounded-full" style="background: var(--orange-500);"></span>ขอวิทยากร</span>`
             : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium" style="background: var(--sky-soft); color: var(--blue-600);">ไม่ขอ</span>`;
 
-          const staffOptions = [`<option value="">— ยังไม่ระบุ —</option>`]
-            .concat(staffList.map(s => `<option value="${escapeHtml(s)}" ${r.assignee === s ? 'selected' : ''}>${escapeHtml(s)}</option>`))
-            .join('');
+          const staffOptions = buildStaffOptionsHtml(r.assignee);
 
           return `
             <tr class="schedule-row">
@@ -3366,8 +3645,10 @@ function tourJsonResponse(obj) {
                   <div class="mt-1">${speakerTag}</div>
                 </div>
               </div>
-              <div class="flex items-center justify-between pt-2.5 border-t gap-2" style="border-color: var(--border);">
-                <span class="text-xs font-medium" style="color: var(--ink-secondary);">วิทยากร: <strong>${escapeHtml(r.assignee || 'ยังไม่มอบหมาย')}</strong></span>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between pt-2.5 border-t gap-2" style="border-color: var(--border);">
+                <select data-assign-id="${escapeHtml(r.id)}" ${state.isLocked ? 'disabled' : ''} class="w-full sm:w-auto rounded-lg px-2.5 py-2 text-xs font-medium border cursor-pointer disabled:opacity-60" style="background: var(--surface-solid); border-color: var(--border-strong); color: var(--ink);" aria-label="เลือกวิทยากรผู้รับผิดชอบ">
+                  ${buildStaffOptionsHtml(r.assignee)}
+                </select>
                 <div class="flex items-center gap-1.5">
                   <button type="button" data-copy-line="${escapeHtml(r.id)}" class="btn-compact px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1" style="background: var(--emerald-soft); color: var(--emerald-600);">
                     <i data-lucide="copy" class="w-3.5 h-3.5"></i><span>LINE</span>
@@ -3625,7 +3906,9 @@ function tourJsonResponse(obj) {
         document.getElementById('fieldInformalStudent').value = record ? (record.is || 0) : 0;
         document.getElementById('fieldGeneral').value = record ? (record.gen || 0) : 0;
         document.getElementById('fieldSpeaker').value = record ? (record.speaker || 'ขอ') : 'ขอ';
-        document.getElementById('fieldAssignee').value = record ? (record.assignee || '') : '';
+        const assigneeSel = document.getElementById('fieldAssignee');
+        assigneeSel.innerHTML = buildStaffOptionsHtml(record ? (record.assignee || '') : '');
+        assigneeSel.value = record ? (record.assignee || '') : '';
         updateFormTotalPreview();
         modal.classList.remove('hidden');
         document.getElementById('fieldOrg').focus();
@@ -3673,32 +3956,63 @@ function tourJsonResponse(obj) {
       // ============================================================
       // 9. LIVE SYNC WITH GOOGLE APPS SCRIPT (Optional)
       // ============================================================
-      async function syncFromGas(targetSheet) {
+      let activeSyncSeq = 0;
+
+      function formatSyncClock() {
+        const now = new Date();
+        return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ' น.';
+      }
+
+      async function syncFromGas(targetSheet, opts) {
+        const silent = Boolean(opts && opts.silent);
         const sheetToFetch = typeof targetSheet === 'string' && targetSheet ? targetSheet : state.currentSheet;
         const url = state.gasUrl.trim();
         if (!url || !isValidGasUrl(url)) {
-          showToast('กรุณาตั้งค่า Apps Script URL ในแท็บ "เชื่อมชีต & Apps Script" ก่อนดึงข้อมูลสด', 'warning');
-          const syncTabBtn = document.querySelector('.tab-btn[data-tab="sync"]');
-          if (syncTabBtn) syncTabBtn.click();
+          if (!silent) {
+            showToast('กรุณาตั้งค่า Apps Script URL ในแท็บ "เชื่อมชีต & Apps Script" ก่อนดึงข้อมูลสด', 'warning');
+            const syncTabBtn = document.querySelector('.tab-btn[data-tab="sync"]');
+            if (syncTabBtn) syncTabBtn.click();
+          }
           return;
         }
+        const seq = ++activeSyncSeq;
         const statusText = document.getElementById('syncStatusText');
+        const statusDot = document.getElementById('syncStatusDot');
         const fetchBtn = document.getElementById('fetchMonthBtn');
-        statusText.textContent = `กำลังดึงข้อมูลเดือน ${SHEET_LABELS[sheetToFetch] || sheetToFetch}...`;
+        statusText.textContent = `กำลังซิงค์เดือน ${SHEET_LABELS[sheetToFetch] || sheetToFetch}...`;
+        if (statusDot) statusDot.className = 'inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse';
         if (fetchBtn) fetchBtn.disabled = true;
         try {
-          const res = await fetch(`${url}?sheet=${encodeURIComponent(sheetToFetch)}`);
+          const res = await fetch(`${url}?sheet=${encodeURIComponent(sheetToFetch)}&_t=${Date.now()}`, { cache: 'no-store' });
           if (!res.ok) throw new Error('HTTP ' + res.status);
-          const json = await res.json();
+          const rawText = await res.text();
+          let json;
+          try {
+            json = JSON.parse(rawText);
+          } catch (_) {
+            throw new Error('สคริปต์ไม่ตอบกลับเป็น JSON (กรุณาตรวจ Deploy > New version และสิทธิ์ Anyone)');
+          }
           if (!json.ok) throw new Error(json.error || 'เกิดข้อผิดพลาดจากสคริปต์');
+          if (seq !== activeSyncSeq) return;
           state.data[sheetToFetch] = Array.isArray(json.rows) ? json.rows : [];
+          if (Array.isArray(json.staff) && json.staff.length) {
+            state.staffRoster = json.staff;
+            safeSetStorage(STAFF_ROSTER_KEY, JSON.stringify(state.staffRoster));
+          }
           saveState();
           renderAll();
-          statusText.textContent = `ซิงค์เดือน ${sheetToFetch} สำเร็จ (${state.data[sheetToFetch].length} คณะ)`;
-          showToast(`ดึงข้อมูลเดือน ${SHEET_LABELS[sheetToFetch] || sheetToFetch} เรียบร้อย (${state.data[sheetToFetch].length} คณะ)`, 'success');
+          if (statusDot) statusDot.className = 'inline-block w-2 h-2 rounded-full bg-emerald-500';
+          statusText.textContent = `ซิงค์ล่าสุด ${formatSyncClock()} (${sheetToFetch} · ${state.data[sheetToFetch].length} คณะ)`;
+          if (!silent) {
+            showToast(`ดึงข้อมูลเดือน ${SHEET_LABELS[sheetToFetch] || sheetToFetch} เรียบร้อย (${state.data[sheetToFetch].length} คณะ)`, 'success');
+          }
         } catch (err) {
-          statusText.textContent = 'โหมดออฟไลน์ / ข้อมูลในเครื่อง';
-          showToast('เชื่อมต่อชีตไม่สำเร็จ: ' + err.message, 'error');
+          if (seq !== activeSyncSeq) return;
+          if (statusDot) statusDot.className = 'inline-block w-2 h-2 rounded-full bg-slate-400';
+          statusText.textContent = 'ข้อมูลในเครื่อง (กด "ดึงข้อมูลเฉพาะเดือนนี้" เพื่อลองซิงค์ใหม่)';
+          if (!silent) {
+            showToast('เชื่อมต่อชีตไม่สำเร็จ: ' + err.message, 'error');
+          }
         } finally {
           if (fetchBtn) fetchBtn.disabled = false;
         }
@@ -3737,9 +4051,7 @@ function tourJsonResponse(obj) {
           sheetSel.value = nextSheet;
           schedMonthSel.value = nextSheet;
           renderAll();
-          if (state.gasUrl && isValidGasUrl(state.gasUrl)) {
-            syncFromGas(nextSheet);
-          }
+          syncFromGas(nextSheet, { silent: true });
         }
 
         sheetSel.addEventListener('change', (e) => handleMonthChange(e.target.value));
@@ -3864,6 +4176,7 @@ function tourJsonResponse(obj) {
           if (idx >= 0) {
             record.rowNumber = rows[idx].rowNumber;
             rows[idx] = record;
+            recordStaffUsage(record.assignee);
             pushToGas('update', record);
             showToast('อัปเดตข้อมูลคณะเข้าชมเรียบร้อย', 'success');
           }
@@ -3910,9 +4223,10 @@ function tourJsonResponse(obj) {
           const rec = getCurrentRows().find(r => r.id === id);
           if (rec) {
             rec.assignee = sel.value;
+            recordStaffUsage(rec.assignee);
             saveState();
             pushToGas('update', rec);
-            renderKPIs();
+            renderAll();
             showToast(`มอบหมาย "${rec.assignee || 'ยังไม่ระบุ'}" ให้ ${rec.org}`, 'success');
           }
         });
@@ -4059,9 +4373,7 @@ function tourJsonResponse(obj) {
       loadState();
       bindEvents();
       renderAll();
-      if (state.gasUrl && isValidGasUrl(state.gasUrl)) {
-        syncFromGas(state.currentSheet);
-      }
+      syncFromGas(state.currentSheet, { silent: true });
     })();
   </script>
 </body>
