@@ -390,7 +390,7 @@
         <div class="glass-card rounded-2xl p-3.5 sm:p-4 flex flex-col lg:flex-row gap-3">
           <div class="relative flex-1 min-w-0">
             <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style="color: var(--ink-muted);"></i>
-            <input id="searchInput" type="search" placeholder="ค้นหาชื่อโรงเรียน, หน่วยงาน, จังหวัด หรือวิทยากร... (กด /)" class="input-surface w-full rounded-xl pl-10 pr-4 text-sm" />
+            <input id="searchInput" name="waghor_tour_search_q" type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="" placeholder="ค้นหาชื่อโรงเรียน, หน่วยงาน, จังหวัด หรือวิทยากร... (กด /)" class="input-surface w-full rounded-xl pl-10 pr-4 text-sm" />
           </div>
 
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 lg:w-auto">
@@ -586,7 +586,7 @@
 
             <div class="space-y-2">
               <label for="gasUrlInput" class="block text-xs font-semibold" style="color: var(--ink-secondary);">Apps Script Web App URL (ต้องขึ้นต้นด้วย https://script.google.com/macros/s/)</label>
-              <input id="gasUrlInput" type="url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="input-surface w-full rounded-xl px-3.5 text-sm font-mono-num" />
+              <input id="gasUrlInput" name="waghor_gas_endpoint" type="url" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="input-surface w-full rounded-xl px-3.5 text-sm font-mono-num" />
               <p id="gasUrlError" class="hidden text-xs font-medium" style="color: var(--rose-600);"></p>
             </div>
 
@@ -4369,10 +4369,30 @@ function tourJsonResponse(obj) {
         });
       }
 
+      function clearSearchAutofill() {
+        const si = document.getElementById('searchInput');
+        if (si && si.value) {
+          si.value = '';
+          state.search = '';
+        }
+      }
+
       // Initialize App
       loadState();
       bindEvents();
+      clearSearchAutofill();
       renderAll();
+      setTimeout(() => {
+        const si = document.getElementById('searchInput');
+        if (si && si.value && si.value.includes('script.google.com')) {
+          clearSearchAutofill();
+          renderSchedule();
+        }
+      }, 120);
+      window.addEventListener('pageshow', () => {
+        clearSearchAutofill();
+        renderSchedule();
+      });
       syncFromGas(state.currentSheet, { silent: true });
     })();
   </script>
