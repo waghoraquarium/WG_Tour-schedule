@@ -3202,7 +3202,7 @@ function tourJsonResponse(obj) {
       const STAFF_ROSTER_KEY = 'waghor_tour_staff_roster_v1';
       const STAFF_USAGE_KEY = 'waghor_tour_staff_usage_v1';
       const LAST_SHEET_KEY = 'waghor_tour_last_sheet_v1';
-      const GAS_URL_KEY = 'waghor_tour_gas_url_v1';
+      const GAS_URL_KEY = 'waghor_tour_gas_url_v2';
       const THEME_KEY = 'waghor_tour_theme_v1';
 
       function getCurrentMonthSheet() {
@@ -3274,7 +3274,7 @@ function tourJsonResponse(obj) {
           state.staffUsage = {};
         }
 
-        const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzWbrlJJAv1pyYI-Xw8VtP2ZZFFeJL-9trF25f3UscIbgkpHM_iLR6gPSZiIgrT-AliJw/exec';
+        const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbz0Ed6qrZsusRUkj-386FgUwfbb0Ayy_AIo7Fww4m3cNVELV5D_MndkcQbnLJrl95Ebjg/exec';
         state.gasUrl = safeGetStorage(GAS_URL_KEY) || DEFAULT_GAS_URL;
         const lastSheet = safeGetStorage(LAST_SHEET_KEY);
         if (lastSheet && SHEET_TABS.includes(lastSheet)) {
